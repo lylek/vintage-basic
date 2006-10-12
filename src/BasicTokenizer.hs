@@ -4,23 +4,18 @@
 -- last updated 2005-07-09
 
 module BasicTokenizer
-    (Token(..),isStringTok,isRemTok,unTok,charTokTest,tokensP) where
+    (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,charTokTest,
+     tokenize,tokenP) where
 
-import Data.Char
-import Parser
-import SimpleParser
---import LAParser
+import Text.ParserCombinators.Parsec
+import BasicLexCommon
 
-type MyParser = SimpleParser
+spaceTokP :: Parser PrimToken
+spaceTokP = whiteSpaceChar >> whiteSpace >> return SpaceTok
 
-isEOL c = c `elem` "\n\r"
-
-spaceTokP :: MyParser Char Token
-spaceTokP = manyP' (isItP (==' ')) >> return SpaceTok
-
-data Token = StringTok String | RemTok String | DataTok String | EOLTok
-	   | CommaTok | ColonTok | SemiTok | LParenTok | RParenTok
-	   | DollarTok | PercentTok
+data PrimToken = StringTok String | RemTok String | DataTok String
+           | CommaTok | ColonTok | SemiTok | LParenTok | RParenTok
+           | DollarTok | PercentTok
            | EqTok | NETok | LETok | LTTok | GETok | GTTok
            | PlusTok | MinusTok | MulTok | DivTok | PowTok
            | AndTok | OrTok | NotTok
@@ -29,34 +24,53 @@ data Token = StringTok String | RemTok String | DataTok String | EOLTok
            | PrintTok | InputTok | RandomizeTok | ReadTok | RestoreTok
            | FnTok | EndTok
            | SpaceTok | CharTok Char
-	     deriving Eq;
+             deriving (Eq,Show)
 
+keyword :: String -> Parser String
+keyword s = try (string s) <?> ("keyword " ++ s)
+
+stringTokP :: Parser PrimToken
 -- no special escape chars allowed
-stringTokP = do keyP "\""
-	        s <- manyP (isItP ((not . isEOL)&&-(/='\"')))
-	        keyP "\""
-	        return (StringTok s)
+stringTokP =
+    do char '"'
+       s <- manyTill anyChar (char '"')
+       return (StringTok s)
 
+isStringTok :: PrimToken -> Bool
 isStringTok (StringTok _) = True
 isStringTok _ = False
 
-remTokP = do keyP "REM"
-             s <- manyP (isItP (not . isEOL))
+remTokP :: Parser PrimToken
+remTokP = do keyword "REM"
+             s <- many anyChar
              return (RemTok s)
 
+isRemTok :: PrimToken -> Bool
 isRemTok (RemTok _) = True
 isRemTok _ = False
 
-dataTokP = do keyP "DATA"
-              s <- manyP (isItP (not . isEOL))
-              return (DataTok s)
-eolTokP = do manyP' (isItP isEOL); return EOLTok
+dataTokP :: Parser PrimToken
+dataTokP =
+    do keyword "DATA"
+       s <- many anyChar
+       return (DataTok s)
 
-charTokP = do c <- isItP (const True); return (CharTok c)
+isDataTok :: PrimToken -> Bool
+isDataTok (DataTok _) = True
+isDataTok _ = False
 
-unTok (CharTok c) = c
-unTok _ = error "Attempted to untokenize non-CharTok"
+charTokP :: Parser PrimToken
+charTokP = do c <- legalChar; return (CharTok c)
 
+isCharTok :: PrimToken -> Bool
+isCharTok (CharTok _) = True
+isCharTok _ = False
+
+unCharTok :: Token -> Char
+unCharTok (_, (CharTok c)) = c
+unCharTok (_, _) = error "Attempted to untokenize non-CharTok"
+
+charTokTest :: (Char -> Bool) -> PrimToken -> Bool
 charTokTest f (CharTok c) = f c
 charTokTest f _ = False
 
@@ -107,11 +121,52 @@ tokenMap =
      ("END", EndTok)
     ]
 
-tokenP :: MyParser Char Token
-tokenP = firstOfP
-	 (spaceTokP ||| stringTokP ||| remTokP ||| dataTokP ||| eolTokP
-	  ||| (foldl1 (|||) [do keyP s; return t | (s,t) <- tokenMap])
-	  ||| charTokP)
+revTokenMap = [(t,s) | (s,t) <- tokenMap]
 
-tokensP :: MyParser Char [Token]
-tokensP = manyP tokenP
+anyTokP :: Parser PrimToken
+anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
+                  ++ [do keyword s; return t | (s,t) <- tokenMap]
+                  ++ [charTokP]) <?> "legal BASIC character"
+
+type Token = (SourcePos,PrimToken)
+
+unTok :: Token -> PrimToken
+unTok (pos,tok) = tok
+
+tokTest :: (PrimToken -> Bool) -> Token -> Bool
+tokTest test (pos,tok) = test tok
+
+tokenize1 :: Parser Token
+tokenize1 =
+    do pos <- getPosition
+       tok <- anyTokP
+       return (pos,tok)
+
+tokenize :: Parser [Token]
+tokenize =
+    do tokens <- many tokenize1
+       eof <?> ""
+       return tokens
+
+-- The single-token parser used at the parser level
+tokenP :: (PrimToken -> Maybe PrimToken) -> GenParser Token () Token
+tokenP test = token printToken posToken testToken
+      where testToken (pos,tok) =
+		case test tok
+		     of Nothing -> Nothing
+			(Just t) -> Just (pos, t)
+
+printToken (pos,tok) =
+    case (lookup tok revTokenMap)
+         of (Just s) -> s
+	    Nothing ->
+		case tok
+		     of (CharTok c) -> [c]
+			(DataTok s) -> "DATA" ++ s
+			(RemTok s) -> "REM" ++ s
+			SpaceTok -> " "
+			(StringTok s) -> "\"" ++ s ++ "\""
+			otherwise -> error "showToken: unrecognized token."
+
+posToken :: Token -> SourcePos
+posToken (pos,tok) = pos

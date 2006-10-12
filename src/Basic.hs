@@ -11,36 +11,58 @@ import BasicSyntax
 import Text.ParserCombinators.Parsec
 import DurableTraps
 import BasicMonad
+import BasicLineScanner
 import BasicTokenizer
-import BasicParser
+--import BasicParser
 import BasicPrinter
-import BasicInterp
+--import BasicInterp
+
+-- TODO: Consider sending errors to stderr.
+-- TODO: On syntax error, consider printing line with marked error.
 
 main = do args <- getArgs
-          sequence_ (intersperse divider [execute fn | fn <- args])
-
-divider = do putStrLn ""
-             putStrLn "------------------------------"
-             putStrLn ""
+          sequence_ [execute fileName | fileName <- args]
 
 execute :: FilePath -> IO ()
-execute fn = do text <- readFile fn
-                putStrLn ("Filename: " ++ fn)
-                putStrLn "Source:"
-                putStr text
-		let [(tokens,"")] = tokensP $$ text
-                case linesP $$ tokens
-                     of [] -> error "!NO PARSE"
-                        [(lineList,[])] -> executeLL lineList
-                        [(lineList,extra)] -> incompleteParse lineList extra
-                        _ -> error "!AMBIGUOUS PARSE"
+execute fileName =
+    do text <- readFile fileName
+       case parse rawLinesP fileName text
+	    of (Left parseError) -> putStrLn ("!SYNTAX ERROR IN RAW "
+					      ++ show parseError)
+	       (Right rawLines) ->
+		   do orderedLines <- sortNubLines rawLines
+		      let tokenizedLines =
+			      [tokenizeRawLine fileName l | l <- orderedLines]
+		      print tokenizedLines
 
-incompleteParse lineList extra =
-    error ("!INCOMPLETE PARSE\nparsed =\n"
-           ++ printLines lineList)
---           ++ "unparsed =\n"
---           ++ extra)
+rawLineOrdering :: RawLine -> RawLine -> Ordering
+rawLineOrdering (RawLine n1 _ _) (RawLine n2 _ _) = compare n1 n2
 
+rawLinesEq :: RawLine -> RawLine -> Bool
+rawLinesEq l1 l2 = rawLineOrdering l1 l2 == EQ
+
+-- This function reverses before nubbing so that later lines take precedence.
+sortNubLines :: [RawLine] -> IO [RawLine]
+sortNubLines lineList =
+    do let sortedLines = sortBy rawLineOrdering lineList
+           reversedSortedLines = reverse sortedLines
+	   reversedNubbedLines = nubBy rawLinesEq reversedSortedLines
+	   nubbedLines = reverse reversedNubbedLines
+	   duplicateLines = deleteFirstsBy rawLinesEq lineList nubbedLines
+       sequence_ [putStrLn ("!SUPERSEDING PREVIOUS LINE " ++ show n)
+		  | (RawLine n _ _) <- duplicateLines]
+       return nubbedLines
+
+tokenizeRawLine fileName (RawLine lin col s) =
+    let setPositionAndTokenize =
+	    do pos <- getPosition
+	       let pos' = setSourceLine pos lin
+	       let pos'' = setSourceColumn pos' col
+	       setPosition pos''
+	       tokenize
+	in parse setPositionAndTokenize fileName s
+
+{-
 executeLL :: [Line] -> IO ()
 executeLL lineList =
     do let snLines = sortNubLines lineList
@@ -54,23 +76,6 @@ executeLL lineList =
                   putStrLn "\nResult:"
                   print r
 
-lineOrdering :: Line -> Line -> Ordering
-lineOrdering l1@(Line n1 sts1) l2@(Line n2 sts2) = compare n1 n2
-lineOrdering l1@(Line n1 sts1) l2@(SyntaxError n2) = compare n1 n2
-lineOrdering l1@(SyntaxError n1) l2@(Line n2 sts2) = compare n1 n2
-lineOrdering l1@(SyntaxError n1) l2@(SyntaxError n2) = compare n1 n2
-
-linesEq :: Line -> Line -> Bool
-linesEq l1 l2 = lineOrdering l1 l2 == EQ
-
--- This function reverses before nubbing so that later lines take precedence.
-sortNubLines :: [Line] -> [Line]
-sortNubLines lineList =
-    let sortedLines = sortBy lineOrdering lineList
-        reversedSortedLines = reverse sortedLines
-        reversedNubbedLines = nubBy linesEq reversedSortedLines
-        in reverse reversedNubbedLines
-
 -- This 'program' function interprets the list of lines.
 -- Note that jumpTable and interpLine are mutually recursive.
 -- The jumpTable contains interpreted code, which in turn calls
@@ -78,7 +83,7 @@ sortNubLines lineList =
 -- data structure, it memoizes interpreted code, making 'program'
 -- a just-in-time compiler.  (The only time code is reinterpreted
 -- is following an IF statement.)
-program :: [Line] -> Code
+program :: [Line] -> Program
 program lines =
     let interpLine (Line lab stmts) =
             (lab, mapM_ (interpS jumpTable) stmts)
@@ -93,3 +98,5 @@ program lines =
 -- * Pre-check labels, generate code in place of labels
 -- * Convert variable references to IORefs
 -- Is it easiest to do these with staging?
+
+-}

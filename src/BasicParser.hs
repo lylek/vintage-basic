@@ -7,363 +7,312 @@
 module BasicParser(linesP,readFloat,dataValsP) where
 
 import Data.Char
-import Parser
-import SimpleParser
---import LAParser
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Expr
 import BasicSyntax
 import BasicTokenizer
+import BasicLexCommon
 
-type MyParser = SimpleParser
+-- TODO: worry about case sensitivity
+-- TODO: think about when to use 'try'
 
 -- only first 2 chars and 1st digit of variable names are siginificant
 -- should make this settable by option
-varSignifLetters :: Int
-varSignifLetters = 2
-varSignifDigits :: Int
-varSignifDigits = 1
+varSignifLetters = 2 :: Int
+varSignifDigits = 1 :: Int
 
-spaceP = maybeP $ isItP (==SpaceTok)
+type TokParser = GenParser Token ()
 
-labelP :: MyParser Token Int
-labelP = do ds <- manyP' digitP
-            return (read (map unTok ds))
+skipSpace :: TokParser ()
+skipSpace = skipMany (tokenP (==SpaceTok))
 
 -- LITERALS
 
-floatLitP :: MyParser Token Literal
-floatLitP = do v <- floatP
-	       return (FloatLit v)
+floatLitP :: TokParser Literal
+floatLitP =
+    do v <- floatP
+       return (FloatLit v)
 
-intSP :: MyParser Token String
-intSP = do ds <- manyP' (isItP (charTokTest isDigit))
-	   return (map unTok ds)
+sgnP :: TokParser String
+sgnP =
+    do sgn <- tokenP (==PlusTok) <|> tokenP (==MinusTok)
+       return (if tokTest (==PlusTok) sgn then "" else "-")
 
-sgnP :: MyParser Token String
-sgnP = do sgn <- isItP ((==PlusTok)||-(==MinusTok))
-	  return (if sgn==PlusTok then "" else "-")
+floatP :: TokParser Float
+floatP =
+    do skipSpace
+       sgn <- option "" sgnP
+       mant <- try float2P <|> float1P
+       exp <- option "" expP
+       return (read (sgn++mant++exp))
 
-floatP :: MyParser Token Float
-floatP = do spaceP
-            sgn <- maybeP sgnP
-	    mant <- firstOfP (float2P ||| float1P)
-	    exp <- maybeP expP
-	    return (read (concat sgn++mant++concat exp))
+expP :: TokParser String
+expP =
+    do tokenP (charTokTest (=='E'))
+       esgn <- option "" sgnP
+       i <- many1 (charTokTest isDigit)
+       return ("E"++esgn++i)
 
-expP :: MyParser Token String
-expP = do isItP (==CharTok 'E')
-	  esgn <- maybeP sgnP
-	  i <- intSP
-	  return ("E"++concat esgn++i)
+float1P :: TokParser String
+float1P = many1 (charTokTest isDigit)
 
-float1P :: MyParser Token String
-float1P = intSP
+float2P :: TokParser String
+float2P =
+    do i <- many (charTokTest isDigit)
+       tokenP (charTokTest (=='.'))
+       f <- many (charTokTest isDigit)
+       return ("0"++i++"."++f++"0")
 
-float2P :: MyParser Token String
-float2P = do i <- maybeP intSP
-	     isItP (==CharTok '.')
-	     f <- maybeP intSP
-	     return ("0"++concat i++"."++concat f++"0")
+stringLitP :: TokParser Literal
+stringLitP =
+    do (StringTok cs) <- tokenP isStringTok
+       return (StringLit cs)
 
-stringLitP :: MyParser Token Literal
-stringLitP = do (StringTok v) <- isItP isStringTok
-		return (StringLit v)
-
-litP = firstOfP (floatLitP ||| stringLitP)
+litP :: TokParser Literal
+litP = floatLitP <|> stringLitP
 
 -- VARIABLES
 
-alphaP = isItP (charTokTest isUpper)
-digitP = isItP (charTokTest isDigit)
+varBaseP :: Parser String
+varBaseP = do ls <- many1 (do notFollowedBy keywordP; upper)
+              ds <- many digit
+              return (take varSignifLetters ls
+                      ++ take varSignifDigits ds)
 
-varBaseP = do cs <- manyP' alphaP
-	      ds <- manyP digitP
-	      return (map unTok (take varSignifLetters cs
-				 ++ take varSignifDigits ds))
+keywordP :: Parser String
+keywordP =
+    choice $ map (try . string)
+	       ["AND", "OR", "NOT", "LET", "DIM", "ON", "GO", "SUB", "RETURN",
+		"IF", "THEN", "FOR", "TO", "STEP", "NEXT", "PRINT", "INPUT",
+		"RANDOMIZE", "READ", "RESTORE", "FN", "END"]
 
+floatVarP :: Parser Var
 floatVarP = do name <- varBaseP
-	       return (FloatVar name [])
+               return (FloatVar name [])
 
+intVarP :: Parser Var
 intVarP = do name <- varBaseP
-             isItP (==PercentTok)
+             char '%'
              return (IntVar name [])
 
+stringVarP :: Parser Var
 stringVarP = do name <- varBaseP
-		isItP (==DollarTok)
-		return (StringVar name [])
+                char '$'
+                return (StringVar name [])
 
 -- Look for string and int vars first because of $ and % suffixes.
-simpleVarP = do spaceP; firstOfP (stringVarP ||| intVarP ||| floatVarP)
+simpleVarP :: Parser Var
+simpleVarP = do spaces; try stringVarP <|> try intVarP <|> floatVarP
 
-arrP = do v <- simpleVarP
-          xs <- argsP
-          return (case v
-                    of FloatVar name [] -> FloatVar name xs
-                       IntVar name [] -> IntVar name xs
-                       StringVar name [] -> StringVar name xs)
+arrP :: Parser Var
+arrP =
+    do v <- simpleVarP
+       xs <- argsP
+       return (case v
+                 of FloatVar name [] -> FloatVar name xs
+                    IntVar name [] -> IntVar name xs
+                    StringVar name [] -> StringVar name xs)
 
-varP = firstOfP (arrP ||| simpleVarP)
+varP :: Parser Var
+varP = try arrP <|> simpleVarP
 
 -- EXPRESSIONS
 
-litXP = do v <- litP
-	   return (LitX v)
+litXP :: Parser Expr
+litXP =
+    do v <- litP
+       return (LitX v)
 
-varXP = do v <- varP
-	   return (VarX v)
+varXP :: Parser Expr
+varXP =
+    do v <- varP
+       return (VarX v)
 
-argsP = do isItP (==LParenTok)
-	   spaceP
-           x <- exprP
-	   spaceP
-           xs <- manyP (isItP (==CommaTok) >> spaceP >> exprP)
-	   spaceP
-           isItP (==RParenTok)
-           return (x:xs)
+argsP :: Parser Expr
+argsP =
+    do char '('
+       spaces
+       xs <- sepBy exprP (spaces >> char ',' >> spaces)
+       spaces
+       char ')'
+       return xs
 
-parenXP = do isItP (==LParenTok)
-	     spaceP
-	     x <- exprP
-	     spaceP
-	     isItP (==RParenTok)
-             return (ParenX x)
+parenXP :: Parser Expr
+parenXP =
+    do char '('
+       spaces
+       x <- exprP
+       spaces
+       char ')'
+       return (ParenX x)
 
-plusXP = do isItP (==PlusTok)
-	    spaceP
-	    exprP
+primXP :: Parser Expr
+primXP = parenXP <|> litXP <|> varXP
 
-minusXP = do isItP (==MinusTok)
-	     spaceP
-	     x <- exprP
-	     return (MinusX x)
+opTable :: OperatorTable Char () Expr
+opTable =
+    [[prefix "-" MinusX, prefix "+" id],
+     [binary "^" (BinX PowOp) AssocRight],
+     [binary "*" (BinX MulOp) AssocLeft, binary "/" (BinX DivOp) AssocLeft],
+     [binary "+" (BinX AddOp) AssocLeft, binary "-" (BinX SubOp) AssocLeft]
+     [binary "=" (BinX EqOp) AssocLeft, binary "<>" (BinX NEOp) AssocLeft,
+      binary "<" (BinX LTOp) AssocLeft, binary "<=" (BinX LEOp) AssocLeft,
+      binary ">" (BinX GTOp) AssocLeft, binary ">=" (BinX GEOp) AssocLeft],
+     [prefix "NOT" NotX],
+     [binary "AND" (BinX AndOp) AssocLeft],
+     [binary "OR" (BinX OrOp) AssocLeft]]
 
-notXP = do isItP (==NotTok)
-           spaceP
-           x <- exprP
-           return (NotX x)
+binary :: String -> a -> Assoc -> Operator Char () Expr
+binary name fun assoc =
+    Infix (do spaces; string name; spaces; return fun) assoc
+prefix :: String -> a -> Assoc -> Operator Char () Expr
+prefix name fun =
+    Prefix (do spaces; string name; spaces; return fun)
 
-primXP = firstOfP
-         (litXP ||| varXP ||| parenXP ||| plusXP ||| minusXP)
-
--- For a binary expression 'x1 op x2',
--- this parses the 'op x2' tail, making a function that takes
--- 'x1' to the whole expression.  It's much faster this way.
-binXP' :: Token -> BinOp -> MyParser Token (Expr -> Expr)
-binXP' op tag = do spaceP
-		   isItP (==op)
-                   spaceP
-		   x2 <- exprP
-		   return (\x1 -> BinX tag x1 x2)
-
--- All possible 'tails' of binary expressions.
-binXPs' :: MyParser Token (Expr -> Expr)
-binXPs' = firstOfP (foldr1 (|||) [binXP' op tag | (op,tag) <- binOps])
-
--- Careful about the order, e.g. '<=' must precede '<' or it will
--- never get parsed.
-binOps = [(PlusTok, AddOp),
-	  (MinusTok, SubOp),
-	  (MulTok, MulOp),
-	  (DivTok, DivOp),
-          (PowTok, PowOp),
-	  (EqTok, EqOp),
-	  (NETok, NEOp),
-	  (LETok, LEOp),
-	  (LTTok, LTOp),
-	  (GETok, GEOp),
-	  (GTTok, GTOp),
-          (AndTok, AndOp),
-          (OrTok, OrOp)
-	 ]
-
-exprP :: MyParser Token Expr
-exprP = do x1 <- primXP
-	   fs <- manyP binXPs'
-	   return (fixPrec (foldl (flip ($)) x1 fs))
-
--- Note: All unary operators bind at higher precedence than binary operators.
-
-precOf :: BinOp -> Int
-precOf OrOp   = 0
-precOf AndOp  = 1
-precOf EqOp   = 2
-precOf NEOp   = 2
-precOf LEOp   = 2
-precOf LTOp   = 2
-precOf GEOp   = 2
-precOf GTOp   = 2
-precOf AddOp  = 3
-precOf SubOp  = 3
-precOf MulOp  = 4
-precOf DivOp  = 4
-precOf PowOp  = 5
-
--- Fixes the expression for correct operator precedence.
--- All operators are treated as left-associative.
-fixPrec :: Expr -> Expr
-fixPrec (BinX op1 x1 x2) = bubblePrec (BinX op1 (fixPrec x1) (fixPrec x2))
-fixPrec x = x
-
--- Checks for a precedence imbalance at the top level of the expression,
--- and propagates a correction down the tree.  All binary operators are
--- left-associative, so in the case of equal precedence, the operator on
--- the right is considered lower priority.
-bubblePrec :: Expr -> Expr
-bubblePrec x@(BinX op2 (BinX op1 x1 x2) (BinX op3 x3 x4)) =
-    if precOf op1 < precOf op2
-       then BinX op1 x1 (bubblePrec (BinX op2 x2 (BinX op3 x3 x4)))
-       else if precOf op3 <= precOf op2
-	    then BinX op3 (bubblePrec (BinX op2 (BinX op1 x1 x2) x3)) x4
-	    else x
-bubblePrec x@(BinX op2 (BinX op1 x1 x2) xb) =
-    if precOf op1 < precOf op2
-       then BinX op1 x1 (bubblePrec (BinX op2 x2 xb))
-       else x
-bubblePrec x@(BinX op2 xa (BinX op3 x3 x4)) =
-    if precOf op3 <= precOf op2
-       then BinX op3 (bubblePrec (BinX op2 xa x3)) x4
-       else x
-bubblePrec x = x
+exprP :: Parser Expr
+exprP = buildExpressionParser opTable primXP
 
 -- STATEMENTS
 
-letSP = do maybeP (isItP (==LetTok))
-	   spaceP
-	   v <- varP
-	   spaceP
-	   isItP (==EqTok)
-	   spaceP
-	   x <- exprP
-	   return (LetS v x)
+letSP :: Parser Statement
+letSP =
+    do string "LET"
+       spaces
+       v <- varP
+       spaces
+       char '='
+       spaces
+       x <- exprP
+       return (LetS v x)
 
-gotoSP = do isItP (==GoTok)
-	    spaceP
-	    isItP (==ToTok)
-	    spaceP
-	    n <- labelP
-	    return (GotoS n)
+gotoSP :: Parser Statement
+gotoSP =
+    do string "GO"
+       spaces
+       string "TO"
+       spaces
+       n <- labelP
+       return (GotoS n)
 
-gosubSP = do isItP (==GoTok)
-	     spaceP
-	     isItP (==SubTok)
-	     spaceP
-	     n <- labelP
-	     return (GosubS n)
+gosubSP :: Parser Statement
+gosubSP =
+    do string "GO"
+       spaces
+       string "SUB"
+       spaces
+       n <- labelP
+       return (GosubS n)
 
-returnSP = do isItP (==ReturnTok)
-	      return ReturnS
+returnSP :: Parser Statement
+returnSP =
+    do string "RETURN"
+       return ReturnS
 
-ifSP = do isItP (==IfTok)
-	  spaceP
-	  x <- exprP
-	  spaceP
-	  isItP (==ThenTok)
-	  spaceP
-	  target <- firstOfP (ifSPGoto ||| statementListP)
-	  return (IfS x target)
+ifSP :: Parser Statement
+ifSP =
+    do string "IF"
+       spaces
+       x <- exprP
+       spaces
+       string "THEN"
+       spaces
+       target <- try ifSPGoto <|> statementListP
+       return (IfS x target)
 
-ifSPGoto = do n <- labelP
-	      return [GotoS n]
+ifSPGoto :: Parser [Statement]
+ifSPGoto =
+    do n <- labelP
+       return [GotoS n]
 
-forSP = do isItP (==ForTok)
-	   spaceP
-	   v <- simpleVarP
-	   spaceP
-	   isItP (==EqTok)
-	   spaceP
-	   x1 <- exprP
-	   spaceP
-	   isItP (==ToTok)
-	   spaceP
-	   x2 <- exprP
-	   spaceP
-	   mx3 <- maybeP (isItP (==StepTok) >> spaceP >> exprP)
-	   let x3 = case mx3 of [] -> (LitX (FloatLit 1))
-				[step] -> step
-	   return (ForS v x1 x2 x3)
+forSP :: Parser Statement
+forSP =
+    do string "FOR"
+       spaces
+       v <- simpleVarP
+       spaces
+       char '='
+       spaces
+       x1 <- exprP
+       spaces
+       string "TO"
+       spaces
+       x2 <- exprP
+       spaces
+       x3 <- option (LitX (FloatLit 1)) (string "STEP" >> spaces >> exprP)
+       return (ForS v x1 x2 x3)
 
 -- handles a NEXT and an optional variable list
-nextSP = do isItP (==NextTok)
-	    spaceP
-	    v <- maybeP simpleVarP
-	    if length v > 0
-	       then do vs <- manyP (spaceP >> isItP (==CommaTok) >> spaceP
-				    >> simpleVarP)
-		       return (NextS (Just (v++vs)))
-	       else return (NextS Nothing)
+nextSP :: Parser Statement
+nextSP =
+    do string "NEXT"
+       spaces
+       vs <- sepBy simpleVarP (spaces >> char ',' >> spaces)
+       if length vs > 0
+          then return (NextS (Just vs))
+	  else return (NextS Nothing)
 
-printSP = do isItP (==PrintTok)
-	     spaceP
-	     x <- maybeP exprP
-	     xs <- manyP printSP'
-	     spaceP
-	     (isItP (==SemiTok) >> return (PrintS (x++xs) False))
-	      ||| return (PrintS (x++xs) True)
+printSP :: Parser Statement
+printSP =
+    do string "PRINT"
+       spaces
+       xs <- sepBy exprP (spaces >> char ';' >> spaces)
+       (char ';' >> return (PrintS xs False))
+           <|> return (PrintS xs True)
 
-printSP' = do spaceP
-	      manyP (isItP (==SemiTok))
-	      spaceP
-	      exprP
+inputSP :: Parser Statement
+inputSP =
+    do string "INPUT"
+       spaces
+       ps <- option (return Nothing) inputPrompt
+       spaces
+       vs <- sepBy1 varP (spaces >> char ',' >> spaces)
+       return (InputS ps vs)
 
-inputSP = do isItP (==InputTok)
-	     spaceP
-	     prompt <- maybeP inputPrompt
-	     let ps = case prompt
-		      of [] -> Nothing
-			 [ps] -> Just ps
-	     spaceP
-	     v <- varP
-	     vs <- manyP (spaceP >> isItP (==CommaTok) >> spaceP >> varP)
-	     return (InputS ps (v:vs))
+inputPrompt :: Parser Statement
+inputPrompt =
+    do (StringLit p) <- stringLitP
+       spaces
+       char ';'
+       return Just p
 
-inputPrompt = do (StringTok prompt) <- isItP isStringTok
-		 spaceP
-		 isItP (==SemiTok)
-		 return prompt
+endSP :: Parser Statement
+endSP =
+    do string "END"
+       return EndS
 
-endSP = do isItP (==EndTok)
-	   return EndS
+dimSP :: Parser Statement
+dimSP =
+    do string "DIM"
+       spaces
+       arr <- arrP
+       return (DimS arr)
 
-dimSP = do isItP (==DimTok)
-	   spaceP
-           arr <- arrP
-           return (DimS arr)
+remSP :: Parser Statement
+remSP =
+    do string "REM"
+       s <- many anyChar
+       return (RemS s)
 
-remSP = do (RemTok s) <- isItP isRemTok
-	   return (RemS s)
+statementP :: Parser Statement
+statementP =
+    choice $ map try [printSP, inputSP, gotoSP, gosubSP, returnSP,
+                      ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
 
-statementP = do firstOfP (printSP ||| inputSP
-		          ||| gotoSP ||| gosubSP ||| returnSP
-		          ||| ifSP ||| forSP ||| nextSP
-		          ||| endSP ||| dimSP ||| remSP
-                          ||| letSP)
-
-statementListP = do manyP (isItP (==ColonTok) >> spaceP)
-		    s <- statementP
-		    ss <- manyP statementP'
-		    manyP (spaceP >> isItP (==ColonTok))
-		    return (s:ss)
-
-statementP' = do manyP' (spaceP >> isItP (==ColonTok))
-		 spaceP
-		 statementP
+statementListP :: Parser [Statement]
+statementListP =
+    do sepEndBy1 statementP (spaces >> many1 (char ':' >> spaces))
 
 -- LINES
 
-lineP = do spaceP
-           n <- labelP
-	   spaceP
-	   ss <- firstOfP (statementListP ||| return [])
-	   spaceP
-	   firstOfP (lineEndGood n ss ||| lineEndBad n)
+lineP :: Parser (Int,String)
+lineP =
+    do spaces
+       n <- labelP
+       s <- manyTill anyChar newline
+       return (n,s)
 
-lineEndGood n ss = do manyP' (isItP (==EOLTok))
-		      return (Line n ss)
-
-lineEndBad n = do manyP (isItP (/=EOLTok))
-		  manyP' (isItP (==EOLTok))
-		  return (SyntaxError n)
-
-linesP = manyP lineP
+linesP :: Parser [(Int,String)]
+linesP = many lineP
 
 -- DATA STATEMENTS / INPUT BUFFER
 
@@ -372,27 +321,26 @@ linesP = manyP lineP
 
 readFloat :: String -> Maybe Float
 readFloat s =
-    case floatP $$ (map CharTok s)
-	 of [(fv,[])] -> Just fv
-	    _ -> Nothing
+    case parse floatP "" s
+         of (Right fv) -> Just fv
+            _ -> Nothing
 
-nonCommaP :: MyParser Char Char
-nonCommaP = isItP (/=',')
+nonCommaP :: Parser Char
+nonCommaP = satisfy (/=',')
 
-stringP :: MyParser Char String
-stringP = do keyP "\""
-	     s <- manyP (isItP (/='\"'))
-	     keyP "\""
-	     return s
+stringP :: Parser String
+stringP =
+    do char '"'
+       s <- manyTill anyChar (char '"')
+       return s
 
 trim :: String -> String
 trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
 
-dataValP :: MyParser Char String
-dataValP = do s <- firstOfP (stringP ||| manyP nonCommaP)
-	      return (trim s)
+dataValP :: Parser String
+dataValP =
+    do s <- stringP <|> many nonCommaP
+       return (trim s)
 
-dataValsP :: MyParser Char [String]
-dataValsP = do v <- dataValP
-	       vs <- manyP (keyP "," >> dataValP)
-	       return (v:vs)
+dataValsP :: Parser [String]
+dataValsP = sepBy1 dataValP (char ',')

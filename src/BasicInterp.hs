@@ -13,9 +13,8 @@ import BasicMonad
 import ExceptionHandlers
 import DurableTraps
 import Result
-import Parser      -- for INPUT
-import BasicParser -- for INPUT
-import List
+--import Parser      -- for INPUT
+--import BasicParser -- for INPUT
 
 data Val = FloatVal Float | StringVal String | Mismatch | DivByZero
 	 deriving (Eq,Show,Ord)
@@ -191,11 +190,13 @@ interpS _ (PrintS xs nl) =
        mapM_ printVal vals
        if nl then printString "\n" else return ()
 
+{-
 interpS _ (InputS mPrompt vars) =
     do case mPrompt
             of Nothing -> return ()
                (Just ps) -> printString ps
        inputVars vars
+-}
 
 interpS jumpTable (GotoS lab) =
     do let maybeCode = lookup lab jumpTable
@@ -251,6 +252,7 @@ interpS _ ReturnS = raiseCC Return >> return ()
 interpNextVar (FloatVar v []) = raiseCC (Next (Just v)) >> return ()
 interpNextVar _ = raiseCC (Fail "!TYPE MISMATCH IN NEXT") >> return ()
 
+{-
 inputVars vars =
     do printString "? "
        inText <- getString
@@ -277,6 +279,7 @@ checkInput (FloatVar _ _) s =
     case readFloat s
          of (Just v) -> (FloatVal v)
 	    _ -> Mismatch
+-}
 
 getVal :: Var -> Basic (BasicExcep Result ()) Val
 getVal (FloatVar name []) =
