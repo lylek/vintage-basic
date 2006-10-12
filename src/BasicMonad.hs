@@ -18,8 +18,8 @@ import Data.IORef
 import Data.Array.MArray
 import Data.Array.IO
 import Data.Ix
+import Data.Maybe
 import System.IO
-import Maybe
 import CPST
 import CPSTInstances
 import DurableTraps

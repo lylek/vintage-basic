@@ -5,7 +5,8 @@
 
 module BasicInterp where
 
-import Maybe
+import Data.List
+import Data.Maybe
 import BasicSyntax
 import CPST
 import BasicMonad

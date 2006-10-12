@@ -4,11 +4,11 @@
 -- Lyle Kopnicky
 -- last updated 2005-07-09
 
+import Data.List
+import System.Environment
 import System.IO
-import List
-import System
 import BasicSyntax
-import Parser
+import Text.ParserCombinators.Parsec
 import DurableTraps
 import BasicMonad
 import BasicTokenizer
