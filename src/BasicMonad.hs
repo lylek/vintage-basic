@@ -42,6 +42,7 @@ class BasicType a where
     constrainArray :: ([Int], IOArray Int a) -> a -> ([Int], IOArray Int a)
     constrainArray (bounds, arr) typ = (bounds, arr)
 
+-- For debugging, to "comment something out"
 ignore x = return ()
 
 defBounds = [11] :: [Int] -- default array bounds: one dimension, 0-10
@@ -66,15 +67,12 @@ data BasicState =
                  outputColumn :: Int -- for TAB() function
                }
 
-type Basic o = CPST o BasicRT
 type BasicRT = ReaderT BasicStore (StateT BasicState IO)
-
-type BasicExcep o i = Excep o BasicRT i
+type Basic o = CPST o BasicRT
 type BasicCont o i = Cont o BasicRT i
-
--- We need a shorthand, to use it in a JumpTable.
-type CodeSeg = Basic (BasicExcep Result ()) ()
-type Code = Basic (BasicExcep Result ()) (BasicExcep Result ())
+type BasicExcep o i = Excep o BasicRT i
+type Code a = Basic (BasicExcep Result ()) a
+type Program = Code (BasicExcep Result ())
 
 -- should be called evalInitBasic
 runBasic :: Basic o o -> IO o
@@ -88,7 +86,10 @@ runBasic m =
        let store = BasicStore ft it st fat iat sat
        evalStateT (runReaderT (runCPST m) store) (BasicState 0 0)
 
-assert cond err = if cond then return () else raiseCC (Fail err) >> return ()
+assert cond err = if cond then return () else basicError err
+
+basicError :: String -> Code ()
+basicError err = raiseCC (Fail err) >> return ()
 
 getVar :: BasicType a => String -> Basic o a
 getVar v =
@@ -119,8 +120,7 @@ arrIndex bounds indices =
 -- Creates a new array.  How does it know what type?  The t
 -- dummy variable called 'typ'.  The constrainArray function is never
 -- called - it is just used to create a type restriction.
-dimArray :: BasicType a => String -> [Int] -> a
-         -> Basic (BasicExcep Result ()) ([Int], (IOArray Int a))
+dimArray :: BasicType a => String -> [Int] -> a -> Code ([Int], (IOArray Int a))
 dimArray var bounds typ =
     do store <- ask
        maybeArray <- liftIO $ lookup (arrayTable store) var
@@ -131,8 +131,7 @@ dimArray var bounds typ =
        liftIO $ insert (arrayTable store) var (bounds, arr)
        return (bounds, arr)
 
-lookupArray :: BasicType a => String -> [Int]
-            -> Basic (BasicExcep Result ()) ([Int], (IOArray Int a))
+lookupArray :: BasicType a => String -> [Int] -> Code ([Int], (IOArray Int a))
 lookupArray var indices =
     do store <- ask
        maybeArray <- liftIO $ lookup (arrayTable store) var
@@ -146,23 +145,22 @@ lookupArray var indices =
        return (bounds, arr)
 
 -- Should auto-dim an array for a standard size if it doesn't exist.
-getArr :: BasicType a => String -> [Int] -> Basic (BasicExcep Result ()) a
+getArr :: BasicType a => String -> [Int] -> Code a
 getArr var indices =
     do (bounds, arr) <- lookupArray var indices
        liftIO $ readArray arr (arrIndex bounds indices)
 
 -- Should auto-dim an array for a standard size if it doesn't exist.
-setArr :: BasicType a => String -> [Int] -> a
-        -> Basic (BasicExcep Result ()) ()
+setArr :: BasicType a => String -> [Int] -> a -> Code ()
 setArr var indices val =
     do (bounds, arr) <- lookupArray var indices
        liftIO $ writeArray arr (arrIndex bounds indices) val
 
 printString :: String -> Basic o ()
-printString s = liftIO (putStr s >> hFlush stdout)
+printString s = liftIO $ putStr s >> hFlush stdout
 
 getString :: Basic o String
-getString = liftIO (hFlush stdout >> getLine)
+getString = liftIO $ hFlush stdout >> getLine
 
 {-
 -- A sample for testing the monad.

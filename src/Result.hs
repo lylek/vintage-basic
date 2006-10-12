@@ -16,7 +16,6 @@ instance Show Result where
     show (Next (Just s)) = "!NEXT WITHOUT FOR ERROR (VAR "++s++")"
     show Return = "!RETURN WITHOUT GOSUB ERROR"
     show Suspend = "PROGRAM SUSPENDED"
-    show _ = "UNDEFINED RESULT"
 
 instance Eq Result where
     Pass == Pass = True

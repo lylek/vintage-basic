@@ -16,11 +16,11 @@ import Result
 --import Parser      -- for INPUT
 --import BasicParser -- for INPUT
 
-data Val = FloatVal Float | StringVal String | Mismatch | DivByZero
+data Val = FloatVal Float | StringVal String
 	 deriving (Eq,Show,Ord)
 
 boolToVal :: Bool -> Val
-boolToVal t = if t then -1 else 0
+boolToVal t = if t then FloatVal (-1) else FloatVal 0
 
 isFloat (FloatVal _) = True
 isFloat _ = False
@@ -40,128 +40,75 @@ isReturn _ = False
 unFV (FloatVal fv) = fv
 unSV (StringVal sv) = sv
 
-eval :: Expr -> Basic (BasicExcep Result ()) Val
-eval x = do v <- eval' x
-            case v of
-                   Mismatch -> do raiseCC (Fail "!TYPE MISMATCH IN EXPRESSION")
-                                  return v
-                   DivByZero -> do raiseCC (Fail "!DIVISON BY ZERO")
-                                   return v
-                   v -> return v
+liftFVOp1 :: (Float -> Float) -> Val -> Code Val
+liftFVOp1 f (FloatVal v1) = return $ FloatVal $ f v1
+liftFVOp1 f (StringVal _) = valError "!TYPE MISMATCH IN EXPRESSION"
 
-eval' :: Expr -> Basic (BasicExcep Result ()) Val
-eval' (LitX (FloatLit v)) = return (FloatVal v)
-eval' (LitX (StringLit v)) = return (StringVal v)
-eval' (VarX var) = getVal var
-eval' (MinusX x) =
-    do val <- eval x
-       return (-val)
-eval' (NotX x) =
-    do val <- eval x
-       return (if val==0 then -1 else 0)
-eval' (BinX op x1 x2) =
-    do v1 <- eval' x1
-       v2 <- eval' x2
-       if sameType v1 v2
-          then evalBinOp op v1 v2
-          else return Mismatch
-eval' (ParenX x) = eval x
+liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
+liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
+liftFVOp2 f _             _             = valError "!TYPE MISMATCH IN EXPRESSION"
 
-evalBinOp :: BinOp -> Val -> Val -> Basic (BasicExcep Result ()) Val
-evalBinOp op v1 v2 =
+liftFVBOp2 :: (Float -> Float -> Bool) -> Val -> Val -> Code Val
+liftFVBOp2 f (FloatVal v1) (FloatVal v2) = return $ boolToVal $ f v1 v2
+liftFVBOp2 f _             _             = valError "!TYPE MISMATCH IN EXPRESSION"
+
+liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
+liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
+liftSVOp2 f _              _              = valError "!TYPE MISMATCH IN EXPRESSION"
+
+-- The return (FloatVal 0) will never be executed, but is needed to make the types work
+valError :: String -> Code Val
+valError s = basicError s >> return (FloatVal 0)
+
+eval :: Expr -> Code Val
+eval (LitX (FloatLit v)) = return (FloatVal v)
+eval (LitX (StringLit v)) = return (StringVal v)
+eval (VarX var) = getVal var
+eval (MinusX x) =
+    do val <- eval x
+       liftFVOp1 negate val
+eval (NotX x) =
+    do val <- eval x
+       liftFVOp1 (\v -> if v==0 then -1 else 0) val
+eval (BinX op x1 x2) =
+    do v1 <- eval x1
+       v2 <- eval x2
+       evalBinOp op v1 v2
+eval (ParenX x) = eval x
+
+evalBinOp :: BinOp -> Val -> Val -> Code Val
+evalBinOp op =
     case op of
-      AddOp -> return (v1+v2)
-      SubOp -> return (v1-v2)
-      MulOp -> return (v1*v2)
-      DivOp -> if v2==0 then return DivByZero
-	       else return (v1/v2)
-      PowOp -> return (v1**v2)
-      EqOp -> return (boolToVal (v1==v2))
-      NEOp -> return (boolToVal (v1/=v2))
-      LTOp -> return (boolToVal (v1<v2))
-      LEOp -> return (boolToVal (v1<=v2))
-      GTOp -> return (boolToVal (v1>v2))
-      GEOp -> return (boolToVal (v1>=v2))
-      AndOp -> return (if v1/=0 && v2/=0 then v1 else 0)
-      OrOp -> return (if v1/=0 then v1 else v2)
+      AddOp -> \v1 v2 -> case (v1,v2) of
+                           (FloatVal _,  FloatVal _ ) -> liftFVOp2 (+) v1 v2
+                           (StringVal _, StringVal _) -> liftSVOp2 (++) v1 v2
+      SubOp -> liftFVOp2 (-)
+      MulOp -> liftFVOp2 (*)
+      DivOp -> \v1 v2 -> case (v1,v2) of
+                           (FloatVal fv1, FloatVal fv2) ->
+                               if fv2==0
+                                 then valError "!DIVISON BY ZERO"
+	                         else return $ FloatVal $ fv1/fv2
+                           (_,_) -> valError "!TYPE MISMATCH IN EXPRESSION"
+      PowOp -> liftFVOp2 (**)
+      EqOp -> liftFVBOp2 (==)
+      NEOp -> liftFVBOp2 (/=)
+      LTOp -> liftFVBOp2 (<)
+      LEOp -> liftFVBOp2 (<=)
+      GTOp -> liftFVBOp2 (>)
+      GEOp -> liftFVBOp2 (>=)
+      AndOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 && v2/=0 then v1 else 0
+      OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
 -- TO DO: check defined behavior of AND & OR
-
-instance Num Val where
-    (FloatVal v1) + (FloatVal v2) = FloatVal (v1+v2)
-    (StringVal v1) + (StringVal v2) = StringVal (v1++v2)
-    _ + _ = Mismatch
-    (FloatVal v1) - (FloatVal v2) = FloatVal (v1-v2)
-    _ - _ = Mismatch
-    (FloatVal v1) * (FloatVal v2) = FloatVal (v1*v2)
-    _ * _ = Mismatch
-    negate (FloatVal v1) = FloatVal (negate v1)
-    negate _ = Mismatch
-    abs (FloatVal v1) = FloatVal (abs v1)
-    abs _ = Mismatch
-    signum (FloatVal v1) = FloatVal (signum v1)
-    signum _ = Mismatch
-    fromInteger n = FloatVal (fromInteger n)
-
-instance Fractional Val where
-    (FloatVal v1) / (FloatVal v2) = FloatVal (v1/v2)
-    DivByZero / _ = DivByZero
-    _ / DivByZero = DivByZero
-    _ / _ = Mismatch
-    recip (FloatVal v1) = if v1==0 then DivByZero else FloatVal (recip v1)
-    recip DivByZero = DivByZero
-    recip _ = Mismatch
-    fromRational v = FloatVal (fromRational v)
-
-instance Floating Val where
-    pi = FloatVal pi
-    exp (FloatVal v) = FloatVal (exp v)
-    exp _ = Mismatch
-    sqrt (FloatVal v) = FloatVal (sqrt v)
-    sqrt _ = Mismatch
-    log (FloatVal v) = FloatVal (log v)
-    log _ = Mismatch
-    (FloatVal v1) ** (FloatVal v2) = FloatVal (v1**v2)
-    _ ** _ = Mismatch
-    logBase (FloatVal v1) (FloatVal v2) = FloatVal (logBase v1 v2)
-    logBase _ _ = Mismatch
-    sin (FloatVal v) = FloatVal (sin v)
-    sin _ = Mismatch
-    tan (FloatVal v) = FloatVal (tan v)
-    tan _ = Mismatch
-    cos (FloatVal v) = FloatVal (cos v)
-    cos _ = Mismatch
-    asin (FloatVal v) = FloatVal (asin v)
-    asin _ = Mismatch
-    atan (FloatVal v) = FloatVal (atan v)
-    atan _ = Mismatch
-    acos (FloatVal v) = FloatVal (acos v)
-    acos _ = Mismatch
-    sinh (FloatVal v) = FloatVal (sinh v)
-    sinh _ = Mismatch
-    tanh (FloatVal v) = FloatVal (tanh v)
-    tanh _ = Mismatch
-    cosh (FloatVal v) = FloatVal (cosh v)
-    cosh _ = Mismatch
-    asinh (FloatVal v) = FloatVal (asinh v)
-    asinh _ = Mismatch
-    atanh (FloatVal v) = FloatVal (atanh v)
-    atanh _ = Mismatch
-    acosh (FloatVal v) = FloatVal (acosh v)
-    acosh _ = Mismatch
-
-sameType :: Val -> Val -> Bool
-sameType (FloatVal _) (FloatVal _) = True
-sameType (StringVal _) (StringVal _) = True
-sameType _ _ = False
 
 -- Interpret a single statement.
 -- In the type of interpS, the first () signifies what is passed to a
 -- resumed trap.  The second one represents what is returned by interpS.
-interpS :: [(Label, Code)] -> Statement -> CodeSeg
+interpS :: [(Label, Program)] -> Statement -> Code ()
 
 interpS _ (RemS s) = return ()
 
-interpS _ EndS = end >> return ()
+interpS _ EndS = end
 
 interpS _ (DimS arr) =
     do let (name, xs) = case arr of
@@ -201,7 +148,7 @@ interpS _ (InputS mPrompt vars) =
 interpS jumpTable (GotoS lab) =
     do let maybeCode = lookup lab jumpTable
        assert (isJust maybeCode) ("!BAD GOTO TARGET: " ++ show lab)
-       fromJust maybeCode >> end >> return ()
+       fromJust maybeCode >> end
 
 interpS jumpTable (IfS x sts) =
     do val <- eval x
@@ -234,10 +181,9 @@ interpS _ (ForS (FloatVar control []) x1 x2 x3) =
                                     then continue True
                                     else resume False
                      else passOn True
-interpS _ (ForS _ _ _ _) =
-    raiseCC (Fail "!TYPE MISMATCH IN FOR (VAR)") >> return ()
+interpS _ (ForS _ _ _ _) = basicError "!TYPE MISMATCH IN FOR (VAR)"
 
-interpS _ (NextS Nothing) = raiseCC (Next Nothing) >> return ()
+interpS _ (NextS Nothing) = raiseCC (Next Nothing)
 interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 
 interpS jumpTable (GosubS lab) =
@@ -247,10 +193,10 @@ interpS jumpTable (GosubS lab) =
                if isReturn x then continue False else passOn True
        catchC f (fromJust maybeCode)
        return ()
-interpS _ ReturnS = raiseCC Return >> return ()
+interpS _ ReturnS = raiseCC Return
 
-interpNextVar (FloatVar v []) = raiseCC (Next (Just v)) >> return ()
-interpNextVar _ = raiseCC (Fail "!TYPE MISMATCH IN NEXT") >> return ()
+interpNextVar (FloatVar v []) = raiseCC (Next (Just v))
+interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"
 
 {-
 inputVars vars =
@@ -281,7 +227,7 @@ checkInput (FloatVar _ _) s =
 	    _ -> Mismatch
 -}
 
-getVal :: Var -> Basic (BasicExcep Result ()) Val
+getVal :: Var -> Code Val
 getVal (FloatVar name []) =
     do val <- getVar name
        return (FloatVal val)
@@ -310,13 +256,13 @@ getVal arr =
 		    do val <- getArr name is
 		       return (StringVal val)
 
-setVal :: Var -> Val -> CodeSeg
+setVal :: Var -> Val -> Code ()
 setVal (FloatVar name []) (FloatVal val) = setVar name val
-setVal (FloatVar name []) _ = raiseCC (Fail "!TYPE MISMATCH IN ASSIGNMENT")
+setVal (FloatVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
 setVal (IntVar name []) (FloatVal val) = setVar name (round val :: Int)
-setVal (IntVar name []) _ = raiseCC (Fail "!TYPE MISMATCH IN ASSIGNMENT")
+setVal (IntVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
 setVal (StringVar name []) (StringVal val) = setVar name val
-setVal (StringVar name []) _ = raiseCC (Fail "!TYPE MISMATCH IN ASSIGNMENT")
+setVal (StringVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
 setVal arr val =
     do let (name, xs) =
 	       case arr of
@@ -330,13 +276,12 @@ setVal arr val =
                     ((IntVar _ _), FloatVal fv) ->
                         setArr name is (round fv :: Int)
                     ((StringVar _ _), StringVal sv) -> setArr name is sv
-                    (_,_) -> raiseCC (Fail "!TYPE MISMATCH IN ASSIGNMENT")
-       return ()
+                    (_,_) -> basicError "!TYPE MISMATCH IN ASSIGNMENT"
 
 checkArrInds :: [Val] -> Basic (BasicExcep Result ()) [Int]
 checkArrInds inds =
     do assert (and (map isFloat inds)) "!ARRAY DIMS MUST BE NUMBERS"
-       assert (and (map (>=0) inds)) ("!NEGATIVE ARRAY DIMS")
+       assert (and (map (\(FloatVal ind) -> ind>=0) inds)) ("!NEGATIVE ARRAY DIMS")
        let is = map (round . unFV) inds -- round dimensions as per standard
        return is
 
@@ -347,5 +292,4 @@ printVal (FloatVal v) =
         s = if fromInteger i == v then show i else show v
         in printString (" "++s++" ")
 printVal (StringVal s) = printString s
-printVal Mismatch = printString "<<TYPE MISMATCH>>"
-printVal DivByZero = printString "<<DIVISION BY ZERO>>"
+
