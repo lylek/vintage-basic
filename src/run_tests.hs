@@ -40,29 +40,39 @@ findTests str =
        _ -> error "Impossible error: Match did not have one subexpression"
 
 genTestDriver modulesWithTests =
-    "import Test.HUnit\n"
+    "import System.Exit\n"
+    ++ "import Test.HUnit\n"
     ++ concat [genImport testModule | (testModule,_) <- modulesWithTests]
     ++ "\n"
-    ++ "main = runTestTT $\n"
-    ++ "   TestList [\n"
+    ++ "main = do\n"
+    ++ "   (Counts cases tried errors failures) <- runTestTT $\n"
+    ++ "      TestList [\n"
     ++ concat (intersperse ",\n"
                  [genTest testModule testFunc
                   | (testModule,testFuncs) <- modulesWithTests, testFunc <- testFuncs])
     ++ "\n"
-    ++ "      ]\n"
+    ++ "               ]\n"
+    ++ "   exitWith $ if errors > 0 || failures > 0\n"
+    ++ "                then ExitFailure (errors+failures)\n"
+    ++ "                else ExitSuccess\n"
 
 genImport testModule = "import qualified " ++ testModule ++ "\n"
 
 genTest testModule testFunc =
     let qualifiedTest = testModule ++ "." ++ testFunc
-       in "      TestLabel \"" ++ qualifiedTest ++ "\" " ++ qualifiedTest
+       in "                TestLabel \"" ++ qualifiedTest ++ "\" " ++ qualifiedTest
 
 {-
-main = runTestTT $
-       TestList [TestLabel "test_LineScanner" test_LineScanner,
-                 TestLabel "test_reports_error_if_line_doesn't_start_with_number"
-                   test_reports_error_if_line_doesn't_start_with_number,
-                 TestLabel "test_reports_error_if_file_doesn't_end_in_newline"
-                   test_reports_error_if_file_doesn't_end_in_newline
-                ]
+Example generated code:
+
+main = do
+   (Counts cases tried errors failures) <- runTestTT $
+      TestList [
+                TestLabel "BasicLineScanner_test.test_LineScanner" BasicLineScanner_test.test_LineScanner,
+                TestLabel "BasicLineScanner_test.test_reports_error_if_line_doesn't_start_with_number" BasicLineScanner_test.test_reports_error_if_line_doesn't_start_with_number,
+                TestLabel "BasicLineScanner_test.test_reports_error_if_file_doesn't_end_in_newline" BasicLineScanner_test.test_reports_error_if_file_doesn't_end_in_newline
+               ]
+   exitWith $ if errors > 0 || failures > 0
+                then ExitFailure (errors+failures)
+                else ExitSuccess
 -}
