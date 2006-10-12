@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- CPSTInstances.hs
 -- Instances of CPST for other monad classes
 -- Lyle Kopnicky

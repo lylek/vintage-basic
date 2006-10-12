@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- BasicMonad.hs
 -- This monad provides runtime support for variable assignment,
 -- I/O and a jump table.

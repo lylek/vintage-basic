@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- SimpleParser.hs
 -- A simple set of nondeterministic parser combinators.
 -- Lyle Kopnicky

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- CPST.hs
 -- A continuation-passing style monad transformer,
 -- providing partial continuations.

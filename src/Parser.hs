@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- Parser.hs
 -- Type class defining the combinators required of a nondeterministic parser.
 -- Lyle Kopnicky
