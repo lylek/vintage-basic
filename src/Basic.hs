@@ -56,9 +56,7 @@ sortNubLines lineList =
 tokenizeRawLine fileName (RawLine lin col s) =
     let setPositionAndTokenize =
 	    do pos <- getPosition
-	       let pos' = setSourceLine pos lin
-	       let pos'' = setSourceColumn pos' col
-	       setPosition pos''
+	       setPosition $ setSourceColumn (setSourceLine pos lin) col
 	       tokenize
 	in parse setPositionAndTokenize fileName s
 
