@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
 
 -- CPSTInstances.hs
 -- Instances of CPST for other monad classes
