@@ -3,8 +3,6 @@ module BasicTokenizer_test where
 import Data.List(isInfixOf)
 import Test.HUnit
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Error
-import Text.ParserCombinators.Parsec.Pos
 import BasicTokenizer(PrimToken(..),tokenize,printToken)
 
 test_tokenize = TestCase $ do
