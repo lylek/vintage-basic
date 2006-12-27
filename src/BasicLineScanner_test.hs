@@ -1,6 +1,6 @@
 module BasicLineScanner_test where
 
-import Data.List
+import Data.List(tails)
 import Test.HUnit
 import Text.ParserCombinators.Parsec
 import BasicLineScanner
