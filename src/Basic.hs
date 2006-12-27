@@ -4,17 +4,17 @@
 -- Lyle Kopnicky
 -- last updated 2005-07-09
 
-import Data.List
-import System.Environment
-import System.IO
-import BasicSyntax
-import Text.ParserCombinators.Parsec
-import DurableTraps
-import BasicMonad
-import BasicLineScanner
-import BasicTokenizer
+import Data.List(sortBy,nubBy,deleteFirstsBy)
+import System.Environment(getArgs)
+--import System.IO
+--import BasicSyntax
+import Text.ParserCombinators.Parsec(parse,getPosition,setPosition,setSourceColumn,setSourceLine)
+--import DurableTraps
+--import BasicMonad
+import BasicLineScanner(RawLine(..),rawLinesP)
+import BasicTokenizer(tokenize)
 --import BasicParser
-import BasicPrinter
+--import BasicPrinter
 --import BasicInterp
 
 -- TODO: Consider sending errors to stderr.
