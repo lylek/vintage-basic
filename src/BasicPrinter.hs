@@ -1,7 +1,6 @@
 -- BasicPrinter.hs
 -- Prettyprinter for BASIC syntax.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module BasicPrinter where
 

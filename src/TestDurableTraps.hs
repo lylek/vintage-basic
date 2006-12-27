@@ -1,6 +1,5 @@
 -- TestDurableTraps.hs
 -- Lyle Kopnicky
--- last updated 2004-09-03
 
 module Main where
 

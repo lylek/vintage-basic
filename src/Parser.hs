@@ -3,7 +3,6 @@
 -- Parser.hs
 -- Type class defining the combinators required of a nondeterministic parser.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module Parser where
 

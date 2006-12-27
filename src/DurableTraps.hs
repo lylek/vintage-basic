@@ -2,7 +2,6 @@
 
 -- DurableTraps.hs
 -- Lyle Kopnicky
--- last updated 2004-09-09
 
 module DurableTraps where
 

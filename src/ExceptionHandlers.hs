@@ -1,7 +1,6 @@
 -- ExceptionHandlers.hs
 -- Exception handlers for CPST, both 'catching' and 'trapping'
 -- Lyle Kopnicky
--- last updated 2004-08-30
 
 module ExceptionHandlers where
 

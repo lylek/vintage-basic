@@ -4,7 +4,6 @@
 -- A continuation-passing style monad transformer,
 -- providing partial continuations.
 -- Lyle Kopnicky
--- last updated 2004-09-02
 
 -- Question: can other monad transformers be layered on top of this one,
 -- while retaining 'shift' and 'reset'?

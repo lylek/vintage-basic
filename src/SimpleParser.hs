@@ -3,7 +3,6 @@
 -- SimpleParser.hs
 -- A simple set of nondeterministic parser combinators.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module SimpleParser where
 

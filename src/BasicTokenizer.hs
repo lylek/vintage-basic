@@ -1,7 +1,6 @@
 -- BasicTokenizer.hs
 -- Finds and tokenizes BASIC keywords, in preparation for parsing.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module BasicTokenizer
     (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,charTokTest,

@@ -1,7 +1,6 @@
 -- BasicSyntax.hs
 -- Describes the abstract syntax of BASIC.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module BasicSyntax where
 

@@ -4,7 +4,6 @@
 -- This monad provides runtime support for variable assignment,
 -- I/O and a jump table.
 -- Lyle Kopnicky
--- last updated 2005-07-08
 
 module BasicMonad where
 

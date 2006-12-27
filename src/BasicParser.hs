@@ -2,7 +2,6 @@
 -- Parses BASIC source code to produce abstract syntax.
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module BasicParser(linesP,readFloat,dataValsP) where
 

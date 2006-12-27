@@ -1,7 +1,6 @@
 -- Result.hs
 -- The Result type for Basic computations.
 -- Lyle Kopnicky
--- last updated 2004-09-21
 
 module Result where
 

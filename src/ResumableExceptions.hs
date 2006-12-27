@@ -1,6 +1,5 @@
 -- ResumableExceptions.hs
 -- Lyle Kopnicky
--- last updated 2004-08-30
 
 module ResumableExceptions where
 

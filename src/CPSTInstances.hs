@@ -3,7 +3,6 @@
 -- CPSTInstances.hs
 -- Instances of CPST for other monad classes
 -- Lyle Kopnicky
--- last updated 2004-09-17
 
 module CPSTInstances where
 

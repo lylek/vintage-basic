@@ -1,7 +1,6 @@
 -- BasicInterp.hs
 -- The heart of the interpreter, which uses the Basic monad.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 module BasicInterp where
 
