@@ -2,7 +2,6 @@
 -- The shell of the interpreter.  Processes command-line parameters,
 -- calls the tokenizer, parser, prettyprinter and interpreter.
 -- Lyle Kopnicky
--- last updated 2005-07-09
 
 import Data.List(sortBy,nubBy,deleteFirstsBy)
 import System.Environment(getArgs)
