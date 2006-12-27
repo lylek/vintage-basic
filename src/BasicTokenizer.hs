@@ -4,7 +4,7 @@
 
 module BasicTokenizer
     (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,charTokTest,
-     tokenize,tokenP) where
+     tokenize,tokenP,printToken) where
 
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
