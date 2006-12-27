@@ -1,11 +1,9 @@
 module BasicLineScanner_test where
 
-import Data.List(tails)
+import Data.List(isInfixOf)
 import Test.HUnit
 import Text.ParserCombinators.Parsec
 import BasicLineScanner
-
-contains s1 s2 = elem s1 (map (take (length s1)) (tails s2))
 
 test_LineScanner = TestCase $ do
   let text = unlines ["10SKDJF@#"," 5   ASJDKFdf "]
@@ -17,12 +15,12 @@ test_reports_error_if_line_doesn't_start_with_number = TestCase $ do
   let text = unlines ["10SKDJF@#","ASJD4KFdf "]
   case parse rawLinesP "" text of
     (Left err) -> assertBool ("Parser reported wrong error:" ++ show err)
-                               (contains "expecting line number or end of file" (show err))
+                               (isInfixOf "expecting line number or end of file" (show err))
     (Right rls) -> assertFailure "Parser didn't report error"
 
 test_reports_error_if_file_doesn't_end_in_newline = TestCase $ do
   let text = "10SKDJF@#"
   case parse rawLinesP "" text of
     (Left err) -> assertBool ("Parser reported wrong error:" ++ show err)
-                               (contains "unexpected end of input" (show err))
+                               (isInfixOf "unexpected end of input" (show err))
     (Right rls) -> assertFailure "Parser didn't report error"
