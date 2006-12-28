@@ -3,7 +3,7 @@
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
 
-module BasicParser(statementListP) where
+module BasicParser(lineP) where
 
 import Data.Char
 import Text.ParserCombinators.Parsec
@@ -273,9 +273,13 @@ statementP =
                       ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
 
 statementListP :: TokParser [Statement]
-statementListP =
-    do skipSpace
-       sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
+statementListP = sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
+
+lineP :: TokParser [Statement]
+lineP = do skipSpace
+           sl <- statementListP
+           eof <?> "colon or end of line"
+           return sl
 
 -- DATA STATEMENTS / INPUT BUFFER
 

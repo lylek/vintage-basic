@@ -8,11 +8,14 @@ import BasicParser
 import BasicSyntax
 import BasicTokenizer
 
-test_parse = TestCase $ do
-  let colAndToks = [(1,GoTok), (3,ToTok), (5,CharTok '1'), (7, CharTok '2')]
+makeValidParseTest colAndToks statements = TestCase $ do
   let posAndToks = [(newPos "" 1 col, tok) | (col,tok) <- colAndToks]
-  let expected = [GotoS 12]
-  let result = parse statementListP "" posAndToks
+  let result = parse lineP "" posAndToks
   case result of
            (Left err) -> assertFailure ("parse error: " ++ show err)
-           (Right actual) -> assertEqual "" expected actual
+           (Right actual) -> assertEqual "" statements actual
+
+test_parse =
+    makeValidParseTest
+    [(1,GoTok), (3,ToTok), (5,CharTok '1'), (6,CharTok '2')]
+    [GotoS 12]
