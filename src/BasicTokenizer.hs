@@ -4,8 +4,9 @@
 
 module BasicTokenizer
     (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,tokTest,charTokTest,isStringTok,
-     unStringTok,tokenize,tokenP,posToken,printToken) where
+     unStringTok,unRemTok,tokenize,tokenP,posToken,printToken) where
 
+import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
 
@@ -52,6 +53,9 @@ isRemTok :: PrimToken -> Bool
 isRemTok (RemTok _) = True
 isRemTok _ = False
 
+unRemTok :: Token -> String
+unRemTok (_, (RemTok s)) = s
+
 dataTokP :: Parser PrimToken
 dataTokP =
     do keyword "DATA"
@@ -63,7 +67,7 @@ isDataTok (DataTok _) = True
 isDataTok _ = False
 
 charTokP :: Parser PrimToken
-charTokP = do c <- legalChar; return (CharTok c)
+charTokP = do c <- legalChar; return (CharTok (toUpper c))
 
 isCharTok :: PrimToken -> Bool
 isCharTok (CharTok _) = True

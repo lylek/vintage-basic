@@ -3,7 +3,7 @@
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
 
-module BasicParser(linesP,readFloat,dataValsP) where
+module BasicParser(statementListP) where
 
 import Data.Char
 import Text.ParserCombinators.Parsec
@@ -23,7 +23,12 @@ varSignifDigits = 1 :: Int
 type TokParser = GenParser Token ()
 
 skipSpace :: TokParser ()
-skipSpace = skipMany (tokenP (==SpaceTok))
+skipSpace = skipMany $ tokenP (==SpaceTok)
+
+lineNumP :: TokParser Int
+lineNumP =
+    do s <- many1 (tokenP (charTokTest isDigit) <?> "") <?> "line number"
+       return (read (map unCharTok s))
 
 -- LITERALS
 
@@ -39,71 +44,66 @@ sgnP =
 
 floatP :: TokParser Float
 floatP =
-    do skipSpace
-       sgn <- option "" sgnP
+    do sgn <- option "" sgnP
        mant <- try float2P <|> float1P
        exp <- option "" expP
+       skipSpace
        return (read (sgn++mant++exp))
 
 expP :: TokParser String
 expP =
     do tokenP (charTokTest (=='E'))
        esgn <- option "" sgnP
-       i <- many1 (charTokTest isDigit)
-       return ("E"++esgn++i)
+       i <- many1 (tokenP (charTokTest isDigit))
+       return ("E"++esgn++(map unCharTok i))
 
 float1P :: TokParser String
-float1P = many1 (charTokTest isDigit)
+float1P =
+    do toks <- many1 (tokenP (charTokTest isDigit))
+       return $ map unCharTok toks
 
 float2P :: TokParser String
 float2P =
-    do i <- many (charTokTest isDigit)
+    do i <- many (tokenP (charTokTest isDigit))
        tokenP (charTokTest (=='.'))
-       f <- many (charTokTest isDigit)
-       return ("0"++i++"."++f++"0")
+       f <- many (tokenP (charTokTest isDigit))
+       return ("0"++map unCharTok i++"."++map unCharTok f++"0")
 
 stringLitP :: TokParser Literal
 stringLitP =
-    do (StringTok cs) <- tokenP isStringTok
-       return (StringLit cs)
+    do tok <- tokenP isStringTok
+       return (StringLit (unStringTok tok))
 
 litP :: TokParser Literal
 litP = floatLitP <|> stringLitP
 
 -- VARIABLES
 
-varBaseP :: Parser String
-varBaseP = do ls <- many1 (do notFollowedBy keywordP; upper)
-              ds <- many digit
-              return (take varSignifLetters ls
-                      ++ take varSignifDigits ds)
+varBaseP :: TokParser String
+varBaseP = do ls <- many1 (tokenP (charTokTest isAlpha))
+              ds <- many (tokenP (charTokTest isDigit))
+              return (map unCharTok (take varSignifLetters ls
+                      ++ take varSignifDigits ds))
 
-keywordP :: Parser String
-keywordP =
-    choice $ map (try . string)
-	       ["AND", "OR", "NOT", "LET", "DIM", "ON", "GO", "SUB", "RETURN",
-		"IF", "THEN", "FOR", "TO", "STEP", "NEXT", "PRINT", "INPUT",
-		"RANDOMIZE", "READ", "RESTORE", "FN", "END"]
-
-floatVarP :: Parser Var
+floatVarP :: TokParser Var
 floatVarP = do name <- varBaseP
                return (FloatVar name [])
 
-intVarP :: Parser Var
+intVarP :: TokParser Var
 intVarP = do name <- varBaseP
-             char '%'
+             tokenP (==PercentTok)
              return (IntVar name [])
 
-stringVarP :: Parser Var
+stringVarP :: TokParser Var
 stringVarP = do name <- varBaseP
-                char '$'
+                tokenP (==DollarTok)
                 return (StringVar name [])
 
 -- Look for string and int vars first because of $ and % suffixes.
-simpleVarP :: Parser Var
-simpleVarP = do spaces; try stringVarP <|> try intVarP <|> floatVarP
+simpleVarP :: TokParser Var
+simpleVarP = try stringVarP <|> try intVarP <|> floatVarP
 
-arrP :: Parser Var
+arrP :: TokParser Var
 arrP =
     do v <- simpleVarP
        xs <- argsP
@@ -112,234 +112,198 @@ arrP =
                     IntVar name [] -> IntVar name xs
                     StringVar name [] -> StringVar name xs)
 
-varP :: Parser Var
-varP = try arrP <|> simpleVarP
+varP :: TokParser Var
+varP = do v <- try arrP <|> simpleVarP
+          skipSpace
+          return v
 
 -- EXPRESSIONS
 
-litXP :: Parser Expr
+litXP :: TokParser Expr
 litXP =
     do v <- litP
        return (LitX v)
 
-varXP :: Parser Expr
+varXP :: TokParser Expr
 varXP =
     do v <- varP
        return (VarX v)
 
-argsP :: Parser Expr
+argsP :: TokParser [Expr]
 argsP =
-    do char '('
-       spaces
-       xs <- sepBy exprP (spaces >> char ',' >> spaces)
-       spaces
-       char ')'
+    do tokenP (==LParenTok)
+       xs <- sepBy exprP (tokenP (==CommaTok))
+       tokenP (==RParenTok)
        return xs
 
-parenXP :: Parser Expr
+parenXP :: TokParser Expr
 parenXP =
-    do char '('
-       spaces
+    do tokenP (==LParenTok)
        x <- exprP
-       spaces
-       char ')'
+       tokenP (==RParenTok)
        return (ParenX x)
 
-primXP :: Parser Expr
+primXP :: TokParser Expr
 primXP = parenXP <|> litXP <|> varXP
 
-opTable :: OperatorTable Char () Expr
+opTable :: OperatorTable Token () Expr
 opTable =
-    [[prefix "-" MinusX, prefix "+" id],
-     [binary "^" (BinX PowOp) AssocRight],
-     [binary "*" (BinX MulOp) AssocLeft, binary "/" (BinX DivOp) AssocLeft],
-     [binary "+" (BinX AddOp) AssocLeft, binary "-" (BinX SubOp) AssocLeft]
-     [binary "=" (BinX EqOp) AssocLeft, binary "<>" (BinX NEOp) AssocLeft,
-      binary "<" (BinX LTOp) AssocLeft, binary "<=" (BinX LEOp) AssocLeft,
-      binary ">" (BinX GTOp) AssocLeft, binary ">=" (BinX GEOp) AssocLeft],
-     [prefix "NOT" NotX],
-     [binary "AND" (BinX AndOp) AssocLeft],
-     [binary "OR" (BinX OrOp) AssocLeft]]
+    [[prefix MinusTok MinusX, prefix PlusTok id],
+     [binary PowTok  (BinX PowOp) AssocRight],
+     [binary MulTok  (BinX MulOp) AssocLeft, binary DivTok   (BinX DivOp) AssocLeft],
+     [binary PlusTok (BinX AddOp) AssocLeft, binary MinusTok (BinX SubOp) AssocLeft],
+     [binary EqTok   (BinX EqOp)  AssocLeft, binary NETok    (BinX NEOp)  AssocLeft,
+      binary LTTok   (BinX LTOp)  AssocLeft, binary LETok    (BinX LEOp)  AssocLeft,
+      binary GTTok   (BinX GTOp)  AssocLeft, binary GETok    (BinX GEOp)  AssocLeft],
+     [prefix NotTok   NotX],
+     [binary AndTok  (BinX AndOp) AssocLeft],
+     [binary OrTok   (BinX OrOp)  AssocLeft]]
 
-binary :: String -> a -> Assoc -> Operator Char () Expr
-binary name fun assoc =
-    Infix (do spaces; string name; spaces; return fun) assoc
-prefix :: String -> a -> Assoc -> Operator Char () Expr
-prefix name fun =
-    Prefix (do spaces; string name; spaces; return fun)
+binary :: PrimToken -> (Expr -> Expr -> Expr) -> Assoc -> Operator Token () Expr
+binary tok fun assoc =
+    Infix (do tokenP (==tok); return fun) assoc
+prefix :: PrimToken -> (Expr -> Expr) -> Operator Token () Expr
+prefix tok fun =
+    Prefix (do tokenP (==tok); return fun)
 
-exprP :: Parser Expr
+exprP :: TokParser Expr
 exprP = buildExpressionParser opTable primXP
 
 -- STATEMENTS
 
-letSP :: Parser Statement
+letSP :: TokParser Statement
 letSP =
-    do string "LET"
-       spaces
+    do tokenP (==LetTok)
        v <- varP
-       spaces
-       char '='
-       spaces
+       tokenP (==EqTok)
        x <- exprP
        return (LetS v x)
 
-gotoSP :: Parser Statement
+gotoSP :: TokParser Statement
 gotoSP =
-    do string "GO"
-       spaces
-       string "TO"
-       spaces
-       n <- labelP
+    do tokenP (==GoTok)
+       tokenP (==ToTok)
+       n <- lineNumP
        return (GotoS n)
 
-gosubSP :: Parser Statement
+gosubSP :: TokParser Statement
 gosubSP =
-    do string "GO"
-       spaces
-       string "SUB"
-       spaces
-       n <- labelP
+    do tokenP (==GoTok)
+       tokenP (==SubTok)
+       n <- lineNumP
        return (GosubS n)
 
-returnSP :: Parser Statement
+returnSP :: TokParser Statement
 returnSP =
-    do string "RETURN"
+    do tokenP (==ReturnTok)
        return ReturnS
 
-ifSP :: Parser Statement
+ifSP :: TokParser Statement
 ifSP =
-    do string "IF"
-       spaces
+    do tokenP (==IfTok)
        x <- exprP
-       spaces
-       string "THEN"
-       spaces
+       tokenP (==ThenTok)
        target <- try ifSPGoto <|> statementListP
        return (IfS x target)
 
-ifSPGoto :: Parser [Statement]
+ifSPGoto :: TokParser [Statement]
 ifSPGoto =
-    do n <- labelP
+    do n <- lineNumP
        return [GotoS n]
 
-forSP :: Parser Statement
+forSP :: TokParser Statement
 forSP =
-    do string "FOR"
-       spaces
+    do tokenP (==ForTok)
        v <- simpleVarP
-       spaces
-       char '='
-       spaces
+       tokenP (==EqTok)
        x1 <- exprP
-       spaces
-       string "TO"
-       spaces
+       tokenP (==ToTok)
        x2 <- exprP
-       spaces
-       x3 <- option (LitX (FloatLit 1)) (string "STEP" >> spaces >> exprP)
+       x3 <- option (LitX (FloatLit 1)) (tokenP (==StepTok) >> exprP)
        return (ForS v x1 x2 x3)
 
 -- handles a NEXT and an optional variable list
-nextSP :: Parser Statement
+nextSP :: TokParser Statement
 nextSP =
-    do string "NEXT"
-       spaces
-       vs <- sepBy simpleVarP (spaces >> char ',' >> spaces)
+    do tokenP (==NextTok)
+       vs <- sepBy simpleVarP (tokenP (==CommaTok))
        if length vs > 0
           then return (NextS (Just vs))
 	  else return (NextS Nothing)
 
-printSP :: Parser Statement
+printSP :: TokParser Statement
 printSP =
-    do string "PRINT"
-       spaces
-       xs <- sepBy exprP (spaces >> char ';' >> spaces)
-       (char ';' >> return (PrintS xs False))
+    do tokenP (==PrintTok)
+       xs <- sepBy exprP (tokenP (==SemiTok))
+       (tokenP (==SemiTok) >> return (PrintS xs False))
            <|> return (PrintS xs True)
 
-inputSP :: Parser Statement
+inputSP :: TokParser Statement
 inputSP =
-    do string "INPUT"
-       spaces
-       ps <- option (return Nothing) inputPrompt
-       spaces
-       vs <- sepBy1 varP (spaces >> char ',' >> spaces)
+    do tokenP (==InputTok)
+       ps <- option Nothing inputPrompt
+       vs <- sepBy1 varP (tokenP (==CommaTok))
        return (InputS ps vs)
 
-inputPrompt :: Parser Statement
+inputPrompt :: TokParser (Maybe String)
 inputPrompt =
     do (StringLit p) <- stringLitP
-       spaces
-       char ';'
-       return Just p
+       tokenP (==SemiTok)
+       return (Just p)
 
-endSP :: Parser Statement
+endSP :: TokParser Statement
 endSP =
-    do string "END"
+    do tokenP (==EndTok)
        return EndS
 
-dimSP :: Parser Statement
+dimSP :: TokParser Statement
 dimSP =
-    do string "DIM"
-       spaces
+    do tokenP (==DimTok)
        arr <- arrP
        return (DimS arr)
 
-remSP :: Parser Statement
+remSP :: TokParser Statement
 remSP =
-    do string "REM"
-       s <- many anyChar
-       return (RemS s)
+    do tok <- tokenP isRemTok
+       return (RemS (unRemTok tok))
 
-statementP :: Parser Statement
+statementP :: TokParser Statement
 statementP =
     choice $ map try [printSP, inputSP, gotoSP, gosubSP, returnSP,
                       ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
 
-statementListP :: Parser [Statement]
+statementListP :: TokParser [Statement]
 statementListP =
-    do sepEndBy1 statementP (spaces >> many1 (char ':' >> spaces))
-
--- LINES
-
-lineP :: Parser (Int,String)
-lineP =
-    do spaces
-       n <- labelP
-       s <- manyTill anyChar newline
-       return (n,s)
-
-linesP :: Parser [(Int,String)]
-linesP = many lineP
+    do skipSpace
+       sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
 
 -- DATA STATEMENTS / INPUT BUFFER
 
 -- We don't need to look for EOL characters, because these will only be
 -- fed single lines.
 
-readFloat :: String -> Maybe Float
-readFloat s =
-    case parse floatP "" s
-         of (Right fv) -> Just fv
-            _ -> Nothing
+-- readFloat :: String -> Maybe Float
+-- readFloat s =
+--     case parse floatP "" s
+--          of (Right fv) -> Just fv
+--             _ -> Nothing
 
-nonCommaP :: Parser Char
-nonCommaP = satisfy (/=',')
+-- nonCommaP :: Parser Char
+-- nonCommaP = satisfy (/=',')
 
-stringP :: Parser String
-stringP =
-    do char '"'
-       s <- manyTill anyChar (char '"')
-       return s
+-- stringP :: Parser String
+-- stringP =
+--     do char '"'
+--        s <- manyTill anyChar (char '"')
+--        return s
 
-trim :: String -> String
-trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
+-- trim :: String -> String
+-- trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
 
-dataValP :: Parser String
-dataValP =
-    do s <- stringP <|> many nonCommaP
-       return (trim s)
+-- dataValP :: Parser String
+-- dataValP =
+--     do s <- stringP <|> many nonCommaP
+--        return (trim s)
 
-dataValsP :: Parser [String]
-dataValsP = sepBy1 dataValP (char ',')
+-- dataValsP :: Parser [String]
+-- dataValsP = sepBy1 dataValP (char ',')

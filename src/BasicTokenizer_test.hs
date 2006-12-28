@@ -38,6 +38,15 @@ test_tokenize = TestCase $ do
                                    [(sourceColumn pos, tok) | (pos, tok) <- posAndToks]
   sequence_ $ zipWith testLine source expectedColAndTokss
 
+test_capitalizes_lowercase_chars = TestCase $ do
+   let source = "azAZ"
+   let expectedColAndToks = [(1,CharTok 'A'), (2,CharTok 'Z'), (3,CharTok 'A'), (4, CharTok 'Z')]
+   case parse tokenize "" source of
+            (Left err) -> assertFailure ("parse error: " ++ show err)
+            (Right posAndToks) ->
+                assertEqual "" expectedColAndToks
+                                 [(sourceColumn pos, tok) | (pos, tok) <- posAndToks]
+
 test_eats_spaces_after_most_tokens_but_not_chars = TestCase $ do
    let source = "   ,   +  AND  ORX   YZ  "
    let expectedColAndToks = [(1,SpaceTok), (4,CommaTok), (8,PlusTok), (11,AndTok), (16,OrTok),
@@ -55,7 +64,7 @@ test_reports_error_for_an_illegal_char = TestCase $ do
                      (isInfixOf "expecting legal BASIC character" (show err))
                   (Right rls) -> assertFailure ("Parser didn't report error for illegal character "
                                   ++ show illegalChar)
-               | illegalChar <- "~`az!@#&_[]{}\\'\n\a" ]
+               | illegalChar <- "~`!@#&_[]{}\\'\n\a" ]
 
 test_printToken = TestCase $ do
    let tokens = [CommaTok, ColonTok, SemiTok, LParenTok, RParenTok, DollarTok, PercentTok, EqTok,

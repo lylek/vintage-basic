@@ -13,7 +13,7 @@ whiteSpace :: Parser ()
 whiteSpace = skipMany (whiteSpaceChar <?> "")
 
 legalChar :: Parser Char
-legalChar = upper <|> digit <|> oneOf ",:;()$%=<>+-*/^?"
+legalChar = letter <|> digit <|> oneOf ",:;()$%=<>+-*/^?"
 
 labelP :: Parser Int
 labelP =
