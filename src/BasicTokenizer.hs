@@ -3,8 +3,8 @@
 -- Lyle Kopnicky
 
 module BasicTokenizer
-    (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,charTokTest,
-     tokenize,tokenP,printToken) where
+    (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,tokTest,charTokTest,isStringTok,
+     unStringTok,tokenize,tokenP,posToken,printToken) where
 
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
@@ -39,6 +39,9 @@ stringTokP =
 isStringTok :: PrimToken -> Bool
 isStringTok (StringTok _) = True
 isStringTok _ = False
+
+unStringTok :: Token -> String
+unStringTok (_, (StringTok s)) = s
 
 remTokP :: Parser PrimToken
 remTokP = do keyword "REM"
@@ -149,12 +152,10 @@ tokenize =
        return tokens
 
 -- The single-token parser used at the parser level
-tokenP :: (PrimToken -> Maybe PrimToken) -> GenParser Token () Token
+tokenP :: (PrimToken -> Bool) -> GenParser Token () Token
 tokenP test = token printToken posToken testToken
       where testToken (pos,tok) =
-		case test tok
-		     of Nothing -> Nothing
-			(Just t) -> Just (pos, t)
+		if test tok then Just (pos,tok) else Nothing
 
 printToken (pos,tok) =
     case (lookup tok revTokenMap)
