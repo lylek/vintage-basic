@@ -10,7 +10,7 @@ test_tokenize = TestCase $ do
                 ",:;()$%=<><=>=><+-*/^?",
                 "ANDORNOTLETDIMONGOSUBRETURNIFTHENFORTOSTEPNEXTPRINTINPUT",
                 "RANDOMIZEREADRESTOREFNEND",
-                "\"hello\"    REMGOFORTH\"ANDREAD\"",
+                "\"hello\"REMGOFORTH\"ANDREAD\"",
                 "XDATATODATA"
                ]
   let expectedLenAndTokss = [
@@ -22,7 +22,7 @@ test_tokenize = TestCase $ do
                          (2,GoTok), (3,SubTok), (6,ReturnTok), (2,IfTok), (4,ThenTok), (3,ForTok),
                          (2,ToTok), (4,StepTok), (4,NextTok), (5,PrintTok), (5,InputTok)],
                         [(9,RandomizeTok), (4,ReadTok), (7,RestoreTok), (2,FnTok), (3,EndTok)],
-                        [(7,StringTok "hello"), (4,SpaceTok), (19,RemTok "GOFORTH\"ANDREAD\"")],
+                        [(7,StringTok "hello"), (19,RemTok "GOFORTH\"ANDREAD\"")],
                         [(1,CharTok 'X'), (10,DataTok "TODATA")]
                        ]
   let accumLensWToks lenAndToks =
@@ -37,6 +37,17 @@ test_tokenize = TestCase $ do
                    assertEqual "" expectedColAndToks
                                    [(sourceColumn pos, tok) | (pos, tok) <- posAndToks]
   sequence_ $ zipWith testLine source expectedColAndTokss
+
+test_eats_spaces_after_most_tokens_but_not_chars = TestCase $ do
+   let source = "   ,   +  AND  ORX   YZ  "
+   let expectedColAndToks = [(1,SpaceTok), (4,CommaTok), (8,PlusTok), (11,AndTok), (16,OrTok),
+                             (18,CharTok 'X'), (19,SpaceTok), (22,CharTok 'Y'), (23,CharTok 'Z'),
+                             (24,SpaceTok)]
+   case parse tokenize "" source of
+            (Left err) -> assertFailure ("parse error: " ++ show err)
+            (Right posAndToks) ->
+                assertEqual "" expectedColAndToks
+                                 [(sourceColumn pos, tok) | (pos, tok) <- posAndToks]
 
 test_reports_error_for_an_illegal_char = TestCase $ do
    sequence_ [ case parse tokenize "" [illegalChar] of

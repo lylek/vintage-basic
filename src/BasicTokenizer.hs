@@ -33,6 +33,7 @@ stringTokP :: Parser PrimToken
 stringTokP =
     do char '"'
        s <- manyTill anyChar (char '"')
+       whiteSpace
        return (StringTok s)
 
 isStringTok :: PrimToken -> Bool
@@ -124,7 +125,7 @@ revTokenMap = [(t,s) | (s,t) <- tokenMap]
 
 anyTokP :: Parser PrimToken
 anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
-                  ++ [do keyword s; return t | (s,t) <- tokenMap]
+                  ++ [do keyword s; whiteSpace; return t | (s,t) <- tokenMap]
                   ++ [charTokP]) <?> "legal BASIC character"
 
 type Token = (SourcePos,PrimToken)
