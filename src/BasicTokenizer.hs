@@ -3,17 +3,18 @@
 -- Lyle Kopnicky
 
 module BasicTokenizer
-    (PrimToken(..),Token,isDataTok,isRemTok,unTok,unCharTok,tokTest,charTokTest,isStringTok,
-     unStringTok,unRemTok,tokenize,tokenP,posToken,printToken) where
+    (Token(..),isDataTok,isRemTok,charTokTest,isStringTok,taggedTokensP,tokenP,printToken)
+    where
 
 import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
 
-spaceTokP :: Parser PrimToken
+spaceTokP :: Parser Token
 spaceTokP = whiteSpaceChar >> whiteSpace >> return SpaceTok
 
-data PrimToken = StringTok String | RemTok String | DataTok String
+data Token = StringTok { getStringTokString :: String } | RemTok { getRemTokString :: String }
+           | DataTok { getDataTokString :: String }
            | CommaTok | ColonTok | SemiTok | LParenTok | RParenTok
            | DollarTok | PercentTok
            | EqTok | NETok | LETok | LTTok | GETok | GTTok
@@ -23,13 +24,13 @@ data PrimToken = StringTok String | RemTok String | DataTok String
            | IfTok | ThenTok | ForTok | ToTok | StepTok | NextTok
            | PrintTok | InputTok | RandomizeTok | ReadTok | RestoreTok
            | FnTok | EndTok
-           | SpaceTok | CharTok Char
+           | SpaceTok | CharTok { getCharTokChar :: Char }
              deriving (Eq,Show)
 
 keyword :: String -> Parser String
 keyword s = try (string s) <?> ("keyword " ++ s)
 
-stringTokP :: Parser PrimToken
+stringTokP :: Parser Token
 -- no special escape chars allowed
 stringTokP =
     do char '"'
@@ -37,47 +38,37 @@ stringTokP =
        whiteSpace
        return (StringTok s)
 
-isStringTok :: PrimToken -> Bool
+isStringTok :: Token -> Bool
 isStringTok (StringTok _) = True
 isStringTok _ = False
 
-unStringTok :: Token -> String
-unStringTok (_, (StringTok s)) = s
-
-remTokP :: Parser PrimToken
+remTokP :: Parser Token
 remTokP = do keyword "REM"
              s <- many anyChar
              return (RemTok s)
 
-isRemTok :: PrimToken -> Bool
+isRemTok :: Token -> Bool
 isRemTok (RemTok _) = True
 isRemTok _ = False
 
-unRemTok :: Token -> String
-unRemTok (_, (RemTok s)) = s
-
-dataTokP :: Parser PrimToken
+dataTokP :: Parser Token
 dataTokP =
     do keyword "DATA"
        s <- many anyChar
        return (DataTok s)
 
-isDataTok :: PrimToken -> Bool
+isDataTok :: Token -> Bool
 isDataTok (DataTok _) = True
 isDataTok _ = False
 
-charTokP :: Parser PrimToken
+charTokP :: Parser Token
 charTokP = do c <- legalChar; return (CharTok (toUpper c))
 
-isCharTok :: PrimToken -> Bool
+isCharTok :: Token -> Bool
 isCharTok (CharTok _) = True
 isCharTok _ = False
 
-unCharTok :: Token -> Char
-unCharTok (_, (CharTok c)) = c
-unCharTok (_, _) = error "Attempted to untokenize non-CharTok"
-
-charTokTest :: (Char -> Bool) -> PrimToken -> Bool
+charTokTest :: (Char -> Bool) -> Token -> Bool
 charTokTest f (CharTok c) = f c
 charTokTest f _ = False
 
@@ -130,38 +121,30 @@ tokenMap =
 
 revTokenMap = [(t,s) | (s,t) <- tokenMap]
 
-anyTokP :: Parser PrimToken
+anyTokP :: Parser Token
 anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
                   ++ [do keyword s; whiteSpace; return t | (s,t) <- tokenMap]
                   ++ [charTokP]) <?> "legal BASIC character"
 
-type Token = (SourcePos,PrimToken)
-
-unTok :: Token -> PrimToken
-unTok (pos,tok) = tok
-
-tokTest :: (PrimToken -> Bool) -> Token -> Bool
-tokTest test (pos,tok) = test tok
-
-tokenize1 :: Parser Token
-tokenize1 =
+taggedTokenP :: Parser (Tagged Token)
+taggedTokenP =
     do pos <- getPosition
        tok <- anyTokP
-       return (pos,tok)
+       return (Tagged pos tok)
 
-tokenize :: Parser [Token]
-tokenize =
-    do tokens <- many tokenize1
+taggedTokensP :: Parser [Tagged Token]
+taggedTokensP =
+    do tokens <- many taggedTokenP
        eof <?> ""
        return tokens
 
 -- The single-token parser used at the parser level
-tokenP :: (PrimToken -> Bool) -> GenParser Token () Token
-tokenP test = token printToken posToken testToken
-      where testToken (pos,tok) =
-		if test tok then Just (pos,tok) else Nothing
+tokenP :: (Token -> Bool) -> GenParser (Tagged Token) () (Tagged Token)
+tokenP test = token (printToken . getTaggedVal) getPosTag testTaggedToken
+      where testTaggedToken (Tagged pos tok) =
+		if test tok then Just (Tagged pos tok) else Nothing
 
-printToken (pos,tok) =
+printToken tok =
     case (lookup tok revTokenMap)
          of (Just s) -> s
 	    Nothing ->
@@ -172,6 +155,3 @@ printToken (pos,tok) =
 			SpaceTok -> " "
 			(StringTok s) -> "\"" ++ s ++ "\""
 			otherwise -> error "showToken: unrecognized token."
-
-posToken :: Token -> SourcePos
-posToken (pos,tok) = pos

@@ -6,6 +6,12 @@ module BasicLexCommon where
 
 import Text.ParserCombinators.Parsec
 
+data Tagged a = Tagged { getPosTag :: SourcePos, getTaggedVal :: a }
+              deriving (Show)
+
+instance (Eq a) => Eq (Tagged a) where
+    (Tagged _ x) == (Tagged _ y) = x == y
+
 whiteSpaceChar :: Parser Char
 whiteSpaceChar = oneOf " \v\f\t" <?> "space"
 
