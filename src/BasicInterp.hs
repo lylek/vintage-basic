@@ -86,7 +86,7 @@ evalBinOp op =
       DivOp -> \v1 v2 -> case (v1,v2) of
                            (FloatVal fv1, FloatVal fv2) ->
                                if fv2==0
-                                 then valError "!DIVISON BY ZERO"
+                                 then valError "!DIVISION BY ZERO"
 	                         else return $ FloatVal $ fv1/fv2
                            (_,_) -> valError "!TYPE MISMATCH IN EXPRESSION"
       PowOp -> liftFVOp2 (**)
@@ -168,7 +168,7 @@ interpS _ (ForS (FloatVar control []) x1 x2 x3) =
        assert (isFloat v2) "!TYPE MISMATCH IN FOR (TO)"
        let lim = unFV v2
        v3 <- eval x3
-       assert (isFloat v3) "TYPE MISMATCH IN FOR EXPR (STEP)"
+       assert (isFloat v3) "!TYPE MISMATCH IN FOR EXPR (STEP)"
        let step = unFV v3
        trap $ \ x passOn resume continue ->
                   if isNext x || isNextVar control x
