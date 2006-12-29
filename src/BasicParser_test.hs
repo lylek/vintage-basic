@@ -4,18 +4,22 @@ module BasicParser_test where
 import Test.HUnit
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Pos
+import BasicLexCommon(Tagged(..))
 import BasicParser
 import BasicSyntax
 import BasicTokenizer
 
-makeValidParseTest colAndToks statements = TestCase $ do
-  let posAndToks = [(newPos "" 1 col, tok) | (col,tok) <- colAndToks]
-  let result = parse lineP "" posAndToks
+taggedValToColAndVal (Tagged pos val) = (sourceColumn pos, val)
+
+makeValidParseTest colAndToks expectedColAndStatements = TestCase $ do
+  let taggedToks = [Tagged (newPos "" 1 col) tok | (col,tok) <- colAndToks]
+  let result = parse statementListP "" taggedToks
   case result of
            (Left err) -> assertFailure ("parse error: " ++ show err)
-           (Right actual) -> assertEqual "" statements actual
+           (Right taggedStatements) ->
+               assertEqual "" expectedColAndStatements (map taggedValToColAndVal taggedStatements)
 
 test_parse =
     makeValidParseTest
     [(1,GoTok), (3,ToTok), (5,CharTok '1'), (6,CharTok '2')]
-    [GotoS 12]
+    [(1,GotoS 12)]

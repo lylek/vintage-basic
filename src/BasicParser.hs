@@ -3,7 +3,7 @@
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
 
-module BasicParser(lineP) where
+module BasicParser(statementListP) where
 
 import Data.Char
 import Text.ParserCombinators.Parsec
@@ -12,7 +12,6 @@ import BasicSyntax
 import BasicTokenizer
 import BasicLexCommon
 
--- TODO: worry about case sensitivity
 -- TODO: think about when to use 'try'
 
 -- only first 2 chars and 1st digit of variable names are siginificant
@@ -20,7 +19,7 @@ import BasicLexCommon
 varSignifLetters = 2 :: Int
 varSignifDigits = 1 :: Int
 
-type TokParser = GenParser Token ()
+type TokParser = GenParser (Tagged Token) ()
 
 skipSpace :: TokParser ()
 skipSpace = skipMany $ tokenP (==SpaceTok)
@@ -28,7 +27,7 @@ skipSpace = skipMany $ tokenP (==SpaceTok)
 lineNumP :: TokParser Int
 lineNumP =
     do s <- many1 (tokenP (charTokTest isDigit) <?> "") <?> "line number"
-       return (read (map unCharTok s))
+       return (read (map (getCharTokChar . getTaggedVal) s))
 
 -- LITERALS
 
@@ -40,7 +39,7 @@ floatLitP =
 sgnP :: TokParser String
 sgnP =
     do sgn <- tokenP (==PlusTok) <|> tokenP (==MinusTok)
-       return (if tokTest (==PlusTok) sgn then "" else "-")
+       return (if (getTaggedVal sgn) == PlusTok then "" else "-")
 
 floatP :: TokParser Float
 floatP =
@@ -55,24 +54,24 @@ expP =
     do tokenP (charTokTest (=='E'))
        esgn <- option "" sgnP
        i <- many1 (tokenP (charTokTest isDigit))
-       return ("E"++esgn++(map unCharTok i))
+       return ("E"++esgn++(taggedCharToksToString i))
 
 float1P :: TokParser String
 float1P =
     do toks <- many1 (tokenP (charTokTest isDigit))
-       return $ map unCharTok toks
+       return $ taggedCharToksToString toks
 
 float2P :: TokParser String
 float2P =
     do i <- many (tokenP (charTokTest isDigit))
        tokenP (charTokTest (=='.'))
        f <- many (tokenP (charTokTest isDigit))
-       return ("0"++map unCharTok i++"."++map unCharTok f++"0")
+       return ("0"++taggedCharToksToString i++"."++taggedCharToksToString f++"0")
 
 stringLitP :: TokParser Literal
 stringLitP =
     do tok <- tokenP isStringTok
-       return (StringLit (unStringTok tok))
+       return (StringLit (getStringTokString (getTaggedVal tok)))
 
 litP :: TokParser Literal
 litP = floatLitP <|> stringLitP
@@ -82,7 +81,7 @@ litP = floatLitP <|> stringLitP
 varBaseP :: TokParser String
 varBaseP = do ls <- many1 (tokenP (charTokTest isAlpha))
               ds <- many (tokenP (charTokTest isDigit))
-              return (map unCharTok (take varSignifLetters ls
+              return (taggedCharToksToString (take varSignifLetters ls
                       ++ take varSignifDigits ds))
 
 floatVarP :: TokParser Var
@@ -146,7 +145,7 @@ parenXP =
 primXP :: TokParser Expr
 primXP = parenXP <|> litXP <|> varXP
 
-opTable :: OperatorTable Token () Expr
+opTable :: OperatorTable (Tagged Token) () Expr
 opTable =
     [[prefix MinusTok MinusX, prefix PlusTok id],
      [binary PowTok  (BinX PowOp) AssocRight],
@@ -159,10 +158,10 @@ opTable =
      [binary AndTok  (BinX AndOp) AssocLeft],
      [binary OrTok   (BinX OrOp)  AssocLeft]]
 
-binary :: PrimToken -> (Expr -> Expr -> Expr) -> Assoc -> Operator Token () Expr
+binary :: Token -> (Expr -> Expr -> Expr) -> Assoc -> Operator (Tagged Token) () Expr
 binary tok fun assoc =
     Infix (do tokenP (==tok); return fun) assoc
-prefix :: PrimToken -> (Expr -> Expr) -> Operator Token () Expr
+prefix :: Token -> (Expr -> Expr) -> Operator (Tagged Token) () Expr
 prefix tok fun =
     Prefix (do tokenP (==tok); return fun)
 
@@ -206,10 +205,11 @@ ifSP =
        target <- try ifSPGoto <|> statementListP
        return (IfS x target)
 
-ifSPGoto :: TokParser [Statement]
+ifSPGoto :: TokParser [Tagged Statement]
 ifSPGoto =
-    do n <- lineNumP
-       return [GotoS n]
+    do pos <- getPosition
+       n <- lineNumP
+       return [Tagged pos (GotoS n)]
 
 forSP :: TokParser Statement
 forSP =
@@ -265,21 +265,18 @@ dimSP =
 remSP :: TokParser Statement
 remSP =
     do tok <- tokenP isRemTok
-       return (RemS (unRemTok tok))
+       return (RemS (getRemTokString (getTaggedVal tok)))
 
-statementP :: TokParser Statement
-statementP =
-    choice $ map try [printSP, inputSP, gotoSP, gosubSP, returnSP,
-                      ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
+statementP :: TokParser (Tagged Statement)
+statementP = do pos <- getPosition
+                st <- choice $ map try [printSP, inputSP, gotoSP, gosubSP, returnSP,
+                                        ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
+                return (Tagged pos st)
 
-statementListP :: TokParser [Statement]
-statementListP = sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
-
-lineP :: TokParser [Statement]
-lineP = do skipSpace
-           sl <- statementListP
-           eof <?> "colon or end of line"
-           return sl
+statementListP :: TokParser [Tagged Statement]
+statementListP = do sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
+                    eof <?> "colon or end of line"
+                    return sl                    
 
 -- DATA STATEMENTS / INPUT BUFFER
 

@@ -4,7 +4,11 @@
 
 module BasicSyntax where
 
+import BasicLexCommon(Tagged(..))
+
 type Label = Int
+
+-- TODO: Check if Eq is really necessary for syntax elements
 
 data Literal =
     FloatLit Float
@@ -20,6 +24,7 @@ data Var =
 
 data Builtin = AbsBI Expr | IntBI Expr | RndBI Expr
              | TabBI Expr
+               deriving (Show)
 
 data BinOp = AddOp | SubOp | MulOp | DivOp | PowOp
            | EqOp | NEOp | LTOp | LEOp | GTOp | GEOp
@@ -41,7 +46,7 @@ data Statement =
   | GotoS Label
   | GosubS Label
   | ReturnS
-  | IfS Expr [Statement]
+  | IfS Expr [Tagged Statement]
   | ForS Var Expr Expr Expr
   | NextS (Maybe [Var])
   | PrintS [Expr] Bool -- True if should print newline
@@ -50,6 +55,5 @@ data Statement =
   | RemS String
     deriving (Show,Eq)
 
-data Line = Line Label [Statement]
-          | SyntaxError Label
+data Line = Line Label [Tagged Statement]
           deriving (Show,Eq)

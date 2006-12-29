@@ -3,8 +3,8 @@
 -- Lyle Kopnicky
 
 module BasicTokenizer
-    (Token(..),isDataTok,isRemTok,charTokTest,isStringTok,taggedTokensP,tokenP,printToken)
-    where
+    (Token(..),isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,taggedTokensP,
+     tokenP,printToken) where
 
 import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
@@ -71,6 +71,9 @@ isCharTok _ = False
 charTokTest :: (Char -> Bool) -> Token -> Bool
 charTokTest f (CharTok c) = f c
 charTokTest f _ = False
+
+taggedCharToksToString :: [Tagged Token] -> String
+taggedCharToksToString = map (getCharTokChar . getTaggedVal)
 
 -- still need: numeric literals (incl labels), vars
 
