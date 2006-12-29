@@ -5,13 +5,15 @@
 
 import Data.List(sortBy,nubBy,deleteFirstsBy)
 import System.Environment(getArgs)
+import System.Exit(exitFailure)
 --import System.IO
 --import BasicSyntax
 import Text.ParserCombinators.Parsec(parse,getPosition,setPosition,setSourceColumn,setSourceLine)
 --import DurableTraps
 --import BasicMonad
+import BasicLexCommon(Tagged)
 import BasicLineScanner(RawLine(..),rawLinesP)
-import BasicTokenizer(tokenize)
+import BasicTokenizer(Token,taggedTokensP)
 --import BasicParser
 --import BasicPrinter
 --import BasicInterp
@@ -25,14 +27,28 @@ main = do args <- getArgs
 execute :: FilePath -> IO ()
 execute fileName =
     do text <- readFile fileName
-       case parse rawLinesP fileName text
-	    of (Left parseError) -> putStrLn ("!SYNTAX ERROR IN RAW "
-					      ++ show parseError)
-	       (Right rawLines) ->
-		   do orderedLines <- sortNubLines rawLines
-		      let tokenizedLines =
-			      [tokenizeRawLine fileName l | l <- orderedLines]
-		      print tokenizedLines
+       rawLines <- scanLines fileName text
+       tokenizedLines <- sequence [tokenizeLine fileName rawLine | rawLine <- rawLines]
+       print tokenizedLines
+
+scanLines :: String -> String -> IO [RawLine]
+scanLines fileName text =
+    case parse rawLinesP fileName text
+         of (Left parseError) -> do putStrLn ("!SYNTAX ERROR IN RAW "
+                                              ++ show parseError)
+                                    exitFailure
+            (Right rawLines) -> sortNubLines rawLines
+
+tokenizeLine :: String -> RawLine -> IO [Tagged Token]
+tokenizeLine fileName (RawLine lineNum colNum text) =
+    let setPositionAndTokenize =
+	    do pos <- getPosition
+	       setPosition $ setSourceColumn (setSourceLine pos lineNum) colNum
+	       taggedTokensP
+	in case parse setPositionAndTokenize fileName text
+           of (Left parseError) -> do putStrLn ("!SYNTAX ERROR " ++ show parseError)
+                                      exitFailure
+              (Right taggedTokens) -> return taggedTokens
 
 rawLineOrdering :: RawLine -> RawLine -> Ordering
 rawLineOrdering (RawLine n1 _ _) (RawLine n2 _ _) = compare n1 n2
@@ -51,13 +67,6 @@ sortNubLines lineList =
        sequence_ [putStrLn ("!SUPERSEDING PREVIOUS LINE " ++ show n)
 		  | (RawLine n _ _) <- duplicateLines]
        return nubbedLines
-
-tokenizeRawLine fileName (RawLine lin col s) =
-    let setPositionAndTokenize =
-	    do pos <- getPosition
-	       setPosition $ setSourceColumn (setSourceLine pos lin) col
-	       tokenize
-	in parse setPositionAndTokenize fileName s
 
 {-
 executeLL :: [Line] -> IO ()
