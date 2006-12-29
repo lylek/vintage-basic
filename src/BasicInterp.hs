@@ -11,7 +11,7 @@ import CPST
 import BasicMonad
 import ExceptionHandlers
 import DurableTraps
-import Result
+import BasicResult
 --import Parser      -- for INPUT
 --import BasicParser -- for INPUT
 
@@ -277,7 +277,7 @@ setVal arr val =
                     ((StringVar _ _), StringVal sv) -> setArr name is sv
                     (_,_) -> basicError "!TYPE MISMATCH IN ASSIGNMENT"
 
-checkArrInds :: [Val] -> Basic (BasicExcep Result ()) [Int]
+checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
 checkArrInds inds =
     do assert (and (map isFloat inds)) "!ARRAY DIMS MUST BE NUMBERS"
        assert (and (map (\(FloatVal ind) -> ind>=0) inds)) ("!NEGATIVE ARRAY DIMS")

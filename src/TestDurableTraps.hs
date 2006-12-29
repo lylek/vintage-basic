@@ -30,7 +30,7 @@ getRef :: IORef a -> CPST o IO a
 getRef ref = liftIO $ readIORef ref
 
 exec m = do (Excep x _ _) <- runCPST m
-            putStr "Result: "
+            putStr "BasicResult: "
             print x
 
 -- Same as testB5, but in with durable traps.

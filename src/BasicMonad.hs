@@ -22,7 +22,7 @@ import System.IO
 import CPST
 import CPSTInstances
 import DurableTraps
-import Result
+import BasicResult
 
 data BasicStore =
     BasicStore { floatTable :: HashTable String (IORef Float),
@@ -70,8 +70,8 @@ type BasicRT = ReaderT BasicStore (StateT BasicState IO)
 type Basic o = CPST o BasicRT
 type BasicCont o i = Cont o BasicRT i
 type BasicExcep o i = Excep o BasicRT i
-type Code a = Basic (BasicExcep Result ()) a
-type Program = Code (BasicExcep Result ())
+type Code a = Basic (BasicExcep BasicResult ()) a
+type Program = Code (BasicExcep BasicResult ())
 
 -- should be called evalInitBasic
 runBasic :: Basic o o -> IO o

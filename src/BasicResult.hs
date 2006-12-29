@@ -1,14 +1,14 @@
--- Result.hs
--- The Result type for Basic computations.
+-- BasicResult.hs
+-- The BasicResult type for Basic computations.
 -- Lyle Kopnicky
 
-module Result where
+module BasicResult where
 
 import DurableTraps
 
-data Result = Pass | Fail String | Next (Maybe String) | Return | Suspend
+data BasicResult = Pass | Fail String | Next (Maybe String) | Return | Suspend
 
-instance Show Result where
+instance Show BasicResult where
     show Pass = "NORMAL TERMINATION"
     show (Fail s) = s
     show (Next Nothing) = "!NEXT WITHOUT FOR ERROR"
@@ -16,7 +16,7 @@ instance Show Result where
     show Return = "!RETURN WITHOUT GOSUB ERROR"
     show Suspend = "PROGRAM SUSPENDED"
 
-instance Eq Result where
+instance Eq BasicResult where
     Pass == Pass = True
     Pass == _ = False
     (Fail s1) == (Fail s2) = s1 == s2
@@ -28,5 +28,5 @@ instance Eq Result where
     Suspend == Suspend = True
     Suspend == _ = False
 
-instance ResultType Result where
+instance ResultType BasicResult where
     okValue = Pass
