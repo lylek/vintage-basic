@@ -2,7 +2,7 @@
 -- The BasicResult type for Basic computations.
 -- Lyle Kopnicky
 
-module BasicResult where
+module BasicResult(BasicResult(..)) where
 
 import DurableTraps
 
