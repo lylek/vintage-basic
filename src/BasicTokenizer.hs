@@ -157,4 +157,4 @@ printToken tok =
 			(RemTok s) -> "REM" ++ s
 			SpaceTok -> " "
 			(StringTok s) -> "\"" ++ s ++ "\""
-			otherwise -> error "showToken: unrecognized token."
+			otherwise -> error "printToken: unrecognized token."
