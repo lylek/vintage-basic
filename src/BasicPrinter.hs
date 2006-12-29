@@ -5,6 +5,7 @@
 module BasicPrinter where
 
 import List
+import BasicLexCommon
 import BasicSyntax
 
 -- If it's a round number, print it as an integer.
@@ -48,6 +49,9 @@ printExpr (NotX x) = "NOT " ++ printExpr x
 printExpr (ParenX x) = "(" ++ printExpr x ++ ")"
 printExpr (BinX op x1 x2) = printExpr x1 ++ printOp op ++ printExpr x2
 
+printTaggedStatement :: Tagged Statement -> String
+printTaggedStatement (Tagged pos statement) = printStatement statement
+
 printStatement :: Statement -> String
 printStatement (LetS v x) = "LET " ++ printVar v ++ "=" ++ printExpr x
 printStatement (GotoS n) = "GOTO " ++ show n
@@ -74,9 +78,8 @@ printStatement EndS = "END"
 printStatement (DimS arr) = "DIM " ++ printVar arr
 printStatement (RemS s) = "REM" ++ s
 
-printStatementList ss = concat $ intersperse ":" (map printStatement ss)
+printStatementList ss = concat $ intersperse ":" (map printTaggedStatement ss)
 
 printLine (Line n ss) = show n ++ " " ++ printStatementList ss ++ "\n"
-printLine (SyntaxError n) = "!SYNTAX ERROR IN LINE " ++ show n ++ "\n"
 
 printLines lines = concat $ map printLine lines
