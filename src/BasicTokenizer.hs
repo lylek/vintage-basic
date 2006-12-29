@@ -3,12 +3,15 @@
 -- Lyle Kopnicky
 
 module BasicTokenizer
-    (Token(..),isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,taggedTokensP,
-     tokenP,printToken) where
+    (Token(..),TokenizedLine(..),isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
+     taggedTokensP,tokenP,printToken) where
 
 import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
+
+data TokenizedLine = TokenizedLine Line [Tagged Token]
+                   deriving (Show)
 
 spaceTokP :: Parser Token
 spaceTokP = whiteSpaceChar >> whiteSpace >> return SpaceTok

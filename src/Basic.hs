@@ -7,14 +7,14 @@ import Data.List(sortBy,nubBy,deleteFirstsBy)
 import System.Environment(getArgs)
 import System.Exit(exitFailure)
 --import System.IO
---import BasicSyntax
+import BasicSyntax(Line(..))
 import Text.ParserCombinators.Parsec(parse,getPosition,setPosition,setSourceColumn,setSourceLine)
 --import DurableTraps
 --import BasicMonad
 import BasicLexCommon(Tagged)
 import BasicLineScanner(RawLine(..),rawLinesP)
-import BasicTokenizer(Token,taggedTokensP)
---import BasicParser
+import BasicTokenizer(Token,TokenizedLine(..),taggedTokensP)
+import BasicParser(statementListP)
 --import BasicPrinter
 --import BasicInterp
 
@@ -29,7 +29,8 @@ execute fileName =
     do text <- readFile fileName
        rawLines <- scanLines fileName text
        tokenizedLines <- sequence [tokenizeLine fileName rawLine | rawLine <- rawLines]
-       print tokenizedLines
+       parsedLines <- sequence [parseLine tokenizedLine | tokenizedLine <- tokenizedLines]
+       print parsedLines
 
 scanLines :: String -> String -> IO [RawLine]
 scanLines fileName text =
@@ -39,7 +40,7 @@ scanLines fileName text =
                                     exitFailure
             (Right rawLines) -> sortNubLines rawLines
 
-tokenizeLine :: String -> RawLine -> IO [Tagged Token]
+tokenizeLine :: String -> RawLine -> IO TokenizedLine
 tokenizeLine fileName (RawLine lineNum colNum text) =
     let setPositionAndTokenize =
 	    do pos <- getPosition
@@ -48,7 +49,14 @@ tokenizeLine fileName (RawLine lineNum colNum text) =
 	in case parse setPositionAndTokenize fileName text
            of (Left parseError) -> do putStrLn ("!SYNTAX ERROR " ++ show parseError)
                                       exitFailure
-              (Right taggedTokens) -> return taggedTokens
+              (Right taggedTokens) -> return (TokenizedLine lineNum taggedTokens)
+
+parseLine :: TokenizedLine -> IO Line
+parseLine (TokenizedLine lineNum taggedTokens) =
+    case parse statementListP "" taggedTokens
+         of (Left parseError) -> do putStrLn ("!SYNTAX ERROR " ++ show parseError)
+                                    exitFailure
+            (Right statementList) -> return (Line lineNum statementList)
 
 rawLineOrdering :: RawLine -> RawLine -> Ordering
 rawLineOrdering (RawLine n1 _ _) (RawLine n2 _ _) = compare n1 n2
