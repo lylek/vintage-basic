@@ -10,17 +10,26 @@ import BasicLexCommon
 data RawLine = RawLine Line Column String
 	       deriving (Show,Eq)
 
+blankLineP :: Parser ()
+blankLineP =
+    do newline <?> ""
+       whiteSpace
+
 rawLineP :: Parser RawLine
 rawLineP =
-    do whiteSpace
-       n <- labelP
+    do n <- labelP
        whiteSpace
        pos <- getPosition
        s <- manyTill (anyChar <?> "character") newline
+       whiteSpace
+       many blankLineP
        return (RawLine n (sourceColumn pos) s)
 
 rawLinesP :: Parser [RawLine]
 rawLinesP =
-    do ls <- many rawLineP
+    do whiteSpace
+       many blankLineP
+       ls <- many rawLineP
+       many blankLineP
        eof <?> "end of file"
        return ls

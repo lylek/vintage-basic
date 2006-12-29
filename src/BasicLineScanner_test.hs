@@ -18,6 +18,12 @@ test_reports_error_if_line_doesn't_start_with_number = TestCase $ do
                                (isInfixOf "expecting line number or end of file" (show err))
     (Right rls) -> assertFailure "Parser didn't report error"
 
+test_skips_blank_lines = TestCase $ do
+  let text = unlines ["","10?","","20?",""]
+  case parse rawLinesP "" text of
+    (Left err) -> assertFailure ("parse error: " ++ show err)
+    (Right rls) -> assertEqual "" [RawLine 10 3 "?", RawLine 20 3 "?"] rls
+
 test_reports_error_if_file_doesn't_end_in_newline = TestCase $ do
   let text = "10SKDJF@#"
   case parse rawLinesP "" text of
