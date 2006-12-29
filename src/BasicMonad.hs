@@ -73,7 +73,7 @@ type BasicExcep o i = Excep o BasicRT i
 type Code a = Basic (BasicExcep BasicResult ()) a
 type Program = Code (BasicExcep BasicResult ())
 
-runBasic :: Basic o o -> IO (BasicState,o)
+runBasic :: Basic o o -> IO (o,BasicState)
 runBasic m =
     do ft <- new (==) hashString
        it <- new (==) hashString
@@ -153,6 +153,9 @@ setArr :: BasicType a => String -> [Int] -> a -> Code ()
 setArr var indices val =
     do (bounds, arr) <- lookupArray var indices
        liftIO $ writeArray arr (arrIndex bounds indices) val
+
+setLineNumber :: Int -> Basic o ()
+setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })
 
 printString :: String -> Basic o ()
 printString s = liftIO $ putStr s >> hFlush stdout

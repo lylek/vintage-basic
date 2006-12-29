@@ -6,12 +6,14 @@ module BasicInterp where
 
 import Data.List
 import Data.Maybe
-import BasicSyntax
+import Text.ParserCombinators.Parsec.Pos(sourceLine)
 import CPST
-import BasicMonad
-import ExceptionHandlers
 import DurableTraps
+import ExceptionHandlers
+import BasicLexCommon(Tagged(..))
+import BasicMonad
 import BasicResult
+import BasicSyntax
 --import Parser      -- for INPUT
 --import BasicParser -- for INPUT
 
@@ -100,6 +102,13 @@ evalBinOp op =
       OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
 -- TO DO: check defined behavior of AND & OR
 
+-- Interpret a tagged statement.
+-- Sets the line number in the state, then passes the statement on to interpS.
+interpTS :: [(Label, Program)] -> Tagged Statement -> Code ()
+interpTS jumpTable (Tagged pos statement) =
+    do setLineNumber (sourceLine pos)
+       interpS jumpTable statement
+
 -- Interpret a single statement.
 -- In the type of interpS, the first () signifies what is passed to a
 -- resumed trap.  The second one represents what is returned by interpS.
@@ -153,7 +162,7 @@ interpS jumpTable (IfS x sts) =
     do val <- eval x
        assert (isFloat val) "!TYPE MISMATCH IN IF"
        if (unFV val)/=0
-          then mapM_ (interpS jumpTable) sts
+          then mapM_ (interpTS jumpTable) sts
           else return ()
 
 -- Note that the loop condition isn't tested until a NEXT is reached.
