@@ -8,9 +8,9 @@ module BasicParser(statementListP) where
 import Data.Char
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
+import BasicLexCommon
 import BasicSyntax
 import BasicTokenizer
-import BasicLexCommon
 
 -- TODO: think about when to use 'try'
 
