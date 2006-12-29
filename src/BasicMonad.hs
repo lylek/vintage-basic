@@ -19,10 +19,10 @@ import Data.Array.IO
 import Data.Ix
 import Data.Maybe
 import System.IO
+import BasicResult
 import CPST
 import CPSTInstances
 import DurableTraps
-import BasicResult
 
 data BasicStore =
     BasicStore { floatTable :: HashTable String (IORef Float),
