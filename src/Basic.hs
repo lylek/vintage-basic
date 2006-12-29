@@ -3,20 +3,20 @@
 -- calls the tokenizer, parser, prettyprinter and interpreter.
 -- Lyle Kopnicky
 
-import Data.List(sortBy,nubBy,deleteFirstsBy)
+import Data.List(deleteFirstsBy,mapAccumR,nubBy,sortBy)
 import System.Environment(getArgs)
 import System.Exit(exitFailure)
---import System.IO
+import System.IO(hFlush,stdout)
 import BasicSyntax(Line(..))
 import Text.ParserCombinators.Parsec(parse,getPosition,setPosition,setSourceColumn,setSourceLine)
---import DurableTraps
---import BasicMonad
+import DurableTraps(Excep(..),done)
+import BasicMonad -- just a hack - remove this later
 import BasicLexCommon(Tagged)
 import BasicLineScanner(RawLine(..),rawLinesP)
 import BasicTokenizer(Token,TokenizedLine(..),taggedTokensP)
 import BasicParser(statementListP)
---import BasicPrinter
---import BasicInterp
+import BasicPrinter(printLines)
+import BasicInterp(interpTS)
 
 -- TODO: Consider sending errors to stderr.
 -- TODO: On syntax error, consider printing line with marked error.
@@ -30,7 +30,10 @@ execute fileName =
        rawLines <- scanLines fileName text
        tokenizedLines <- sequence [tokenizeLine fileName rawLine | rawLine <- rawLines]
        parsedLines <- sequence [parseLine tokenizedLine | tokenizedLine <- tokenizedLines]
-       print parsedLines
+       hFlush stdout
+       (Excep r _ _, BasicState lineNum _) <- runBasic $ program parsedLines
+       putStrLn "\nResult:"
+       putStr (show r ++ " IN LINE " ++ show lineNum)
 
 scanLines :: String -> String -> IO [RawLine]
 scanLines fileName text =
@@ -76,20 +79,6 @@ sortNubLines lineList =
 		  | (RawLine n _ _) <- duplicateLines]
        return nubbedLines
 
-{-
-executeLL :: [Line] -> IO ()
-executeLL lineList =
-    do let snLines = sortNubLines lineList
-       putStrLn "\nPrettyprinted:"
-       putStr (printLines snLines)
-       if length [() | SyntaxError n <- lineList] > 0
-          then return ()
-          else do putStrLn "\nRun:"
-                  hFlush stdout
-                  (BasicState lineNum _, Excep r _ _) <- runBasic $ program snLines
-                  putStrLn "\nResult:"
-                  putStr (show r ++ " IN LINE " ++ show lineNum)
-
 -- This 'program' function interprets the list of lines.
 -- Note that jumpTable and interpLine are mutually recursive.
 -- The jumpTable contains interpreted code, which in turn calls
@@ -100,7 +89,7 @@ executeLL lineList =
 program :: [Line] -> Program
 program lines =
     let interpLine (Line lab stmts) =
-            (lab, mapM_ (interpS jumpTable) stmts)
+            (lab, mapM_ (interpTS jumpTable) stmts)
         makeTableEntry accumCode (lab, codeSeg) =
             let accumCode' = codeSeg >> accumCode
                 in (accumCode', (lab, accumCode'))
@@ -112,5 +101,3 @@ program lines =
 -- * Pre-check labels, generate code in place of labels
 -- * Convert variable references to IORefs
 -- Is it easiest to do these with staging?
-
--}
