@@ -274,7 +274,8 @@ statementP = do pos <- getPosition
                 return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]
-statementListP = do sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
+statementListP = do many (tokenP (==ColonTok))
+                    sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
                     eof <?> "colon or end of line"
                     return sl                    
 
