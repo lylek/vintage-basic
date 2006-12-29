@@ -73,8 +73,7 @@ type BasicExcep o i = Excep o BasicRT i
 type Code a = Basic (BasicExcep BasicResult ()) a
 type Program = Code (BasicExcep BasicResult ())
 
--- should be called evalInitBasic
-runBasic :: Basic o o -> IO o
+runBasic :: Basic o o -> IO (BasicState,o)
 runBasic m =
     do ft <- new (==) hashString
        it <- new (==) hashString
@@ -83,7 +82,7 @@ runBasic m =
        iat <- new (==) hashString
        sat <- new (==) hashString
        let store = BasicStore ft it st fat iat sat
-       evalStateT (runReaderT (runCPST m) store) (BasicState 0 0)
+       runStateT (runReaderT (runCPST m) store) (BasicState 0 0)
 
 assert cond err = if cond then return () else basicError err
 

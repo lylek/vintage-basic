@@ -69,9 +69,9 @@ executeLL lineList =
           then return ()
           else do putStrLn "\nRun:"
                   hFlush stdout
-                  (Excep r _ _) <- runBasic $ program snLines
+                  (BasicState lineNum _, Excep r _ _) <- runBasic $ program snLines
                   putStrLn "\nResult:"
-                  print r
+                  putStr (show r ++ " IN LINE " ++ show lineNum)
 
 -- This 'program' function interprets the list of lines.
 -- Note that jumpTable and interpLine are mutually recursive.
