@@ -234,9 +234,15 @@ nextSP =
 printSP :: TokParser Statement
 printSP =
     do tokenP (==PrintTok)
-       xs <- sepBy exprP (tokenP (==SemiTok))
+       xs <- option [] printSPExprs
        (tokenP (==SemiTok) >> return (PrintS xs False))
            <|> return (PrintS xs True)
+
+printSPExprs :: TokParser [Expr]
+printSPExprs =
+    do x <- exprP
+       xs' <- many (try (tokenP (==SemiTok) >> exprP))
+       return (x:xs')
 
 inputSP :: TokParser Statement
 inputSP =
