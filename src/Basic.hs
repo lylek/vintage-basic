@@ -16,7 +16,7 @@ import BasicLineScanner(RawLine(..),rawLinesP)
 import BasicTokenizer(Token,TokenizedLine(..),taggedTokensP)
 import BasicParser(statementListP)
 import BasicPrinter(printLines)
-import BasicInterp(interpTS)
+import BasicInterp(interpLines)
 
 -- TODO: Consider sending errors to stderr.
 -- TODO: On syntax error, consider printing line with marked error.
@@ -31,7 +31,7 @@ execute fileName =
        tokenizedLines <- sequence [tokenizeLine fileName rawLine | rawLine <- rawLines]
        parsedLines <- sequence [parseLine tokenizedLine | tokenizedLine <- tokenizedLines]
        hFlush stdout
-       (Excep r _ _, BasicState lineNum _) <- runBasic $ program parsedLines
+       (Excep r _ _, BasicState lineNum _) <- runBasic $ interpLines parsedLines
        putStrLn "\nResult:"
        putStr (show r ++ " IN LINE " ++ show lineNum)
 
@@ -78,23 +78,6 @@ sortNubLines lineList =
        sequence_ [putStrLn ("!SUPERSEDING PREVIOUS LINE " ++ show n)
 		  | (RawLine n _ _) <- duplicateLines]
        return nubbedLines
-
--- This 'program' function interprets the list of lines.
--- Note that jumpTable and interpLine are mutually recursive.
--- The jumpTable contains interpreted code, which in turn calls
--- the jumpTable to look up code.  Since the jumpTable is a single
--- data structure, it memoizes interpreted code, making 'program'
--- a just-in-time compiler.  (The only time code is reinterpreted
--- is following an IF statement.)
-program :: [Line] -> Program
-program lines =
-    let interpLine (Line lab stmts) =
-            (lab, mapM_ (interpTS jumpTable) stmts)
-        makeTableEntry accumCode (lab, codeSeg) =
-            let accumCode' = codeSeg >> accumCode
-                in (accumCode', (lab, accumCode'))
-        jumpTable = snd $ mapAccumR makeTableEntry done $ map interpLine lines
-        in snd $ head jumpTable
 
 -- Other things we could do:
 -- * Pre-check types

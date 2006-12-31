@@ -2,7 +2,7 @@
 -- The heart of the interpreter, which uses the Basic monad.
 -- Lyle Kopnicky
 
-module BasicInterp where
+module BasicInterp(interpLines) where
 
 import Data.List
 import Data.Maybe
@@ -16,6 +16,25 @@ import BasicMonad
 import BasicResult
 import BasicRuntimeParser(dataValsP,readFloat)
 import BasicSyntax
+
+-- This 'program' function interprets the list of lines.
+-- Note that jumpTable and interpLine are mutually recursive.
+-- The jumpTable contains interpreted code, which in turn calls
+-- the jumpTable to look up code.  Since the jumpTable is a single
+-- data structure, it memoizes interpreted code, making 'program'
+-- a just-in-time compiler.  (The only time code is reinterpreted
+-- is following an IF statement.)
+interpLines :: [Line] -> Program
+interpLines lines =
+    let interpLine (Line lab stmts) =
+            (lab, mapM_ (interpTS jumpTable) stmts)
+        makeTableEntry accumCode (lab, codeSeg) =
+            let accumCode' = codeSeg >> accumCode
+                in (accumCode', (lab, accumCode'))
+        jumpTable = snd $ mapAccumR makeTableEntry done $ map interpLine lines
+        in snd $ head jumpTable
+
+-- Expression evaluation
 
 data Val = FloatVal Float | StringVal String
 	 deriving (Eq,Show,Ord)
