@@ -172,7 +172,7 @@ exprP = buildExpressionParser opTable primXP
 
 letSP :: TokParser Statement
 letSP =
-    do tokenP (==LetTok)
+    do skip0or1 (tokenP (==LetTok))
        v <- varP
        tokenP (==EqTok)
        x <- exprP

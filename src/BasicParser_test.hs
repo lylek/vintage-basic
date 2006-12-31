@@ -36,5 +36,15 @@ test_parse_print_string =
 
 test_parse_print_string_wo_newline =
     makeValidParseTest
-    [(1,PrintTok), (2,StringTok "hello"), (9,ColonTok), (10,PrintTok), (11,StringTok "bye"), (16,SemiTok)]
-    [(1,PrintS [LitX (StringLit "hello")] True), (10,PrintS [LitX (StringLit "bye")] False)]
+    [(1,PrintTok), (2,StringTok "hello"), (9,SemiTok)]
+    [(1,PrintS [LitX (StringLit "hello")] False)]
+
+test_parse_let =
+    makeValidParseTest
+    [(1,LetTok), (4,CharTok 'A'), (5,EqTok), (6,CharTok '1')]
+    [(1,LetS (FloatVar "A" []) (LitX (FloatLit 1.0)))]
+
+test_parse_let_wo_keyword =
+    makeValidParseTest
+    [(1,CharTok 'A'), (2,EqTok), (3,CharTok '1')]
+    [(1,LetS (FloatVar "A" []) (LitX (FloatLit 1.0)))]
