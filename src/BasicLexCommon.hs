@@ -25,3 +25,6 @@ labelP :: Parser Int
 labelP =
     do s <- many1 (digit <?> "") <?> "line number"
        return (read s)
+
+skip0or1 :: GenParser tok st a -> GenParser tok st ()
+skip0or1 parser = (parser >> return ()) <|> return ()

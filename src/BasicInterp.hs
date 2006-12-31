@@ -6,6 +6,7 @@ module BasicInterp where
 
 import Data.List
 import Data.Maybe
+import Text.ParserCombinators.Parsec(parse) -- for INPUT
 import Text.ParserCombinators.Parsec.Pos(sourceLine)
 import CPST
 import DurableTraps
@@ -14,8 +15,7 @@ import BasicLexCommon(Tagged(..))
 import BasicMonad
 import BasicResult
 import BasicSyntax
---import Parser      -- for INPUT
---import BasicParser -- for INPUT
+import BasicParser(dataValsP,readFloat) -- for INPUT
 
 data Val = FloatVal Float | StringVal String
 	 deriving (Eq,Show,Ord)
@@ -145,13 +145,11 @@ interpS _ (PrintS xs nl) =
        mapM_ printVal vals
        if nl then printString "\n" else return ()
 
-{-
 interpS _ (InputS mPrompt vars) =
     do case mPrompt
             of Nothing -> return ()
                (Just ps) -> printString ps
        inputVars vars
--}
 
 interpS jumpTable (GotoS lab) =
     do let maybeCode = lookup lab jumpTable
@@ -206,34 +204,32 @@ interpS _ ReturnS = raiseCC Return
 interpNextVar (FloatVar v []) = raiseCC (Next (Just v))
 interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"
 
-{-
+inputVars :: [Var] -> Code ()
 inputVars vars =
     do printString "? "
        inText <- getString
-       case dataValsP $$ inText
-         of [(ivs,"")] ->
-                do let vals = zipWith checkInput vars ivs
-                   if or (map (==Mismatch) vals)
-                     then
-                       do printString "!NUMBER EXPECTED - RETRY INPUT LINE\n"
-                          printString "?"
-                          inputVars vars
-                     else
-                       do sequence_ (zipWith setVal vars vals)
-                          case compare (length vars) (length vals)
-                               of LT -> printString "!EXTRA INPUT IGNORED\n"
-                                  GT -> do printString "?"
-                                           inputVars (drop (length vals) vars)
-                                  EQ -> return ()
-            _ -> error "Mismatched inputbuf in inputVars"
+       case parse dataValsP "" inText
+         of (Right ivs) ->
+                do let maybeVals = zipWith checkInput vars ivs
+                   if or (map isNothing maybeVals)
+                      then do printString "!NUMBER EXPECTED - RETRY INPUT LINE\n"
+                              inputVars vars
+                      else do let vals = map fromJust maybeVals
+                              sequence_ (zipWith setVal vars vals)
+                              case compare (length vars) (length vals)
+                                   of LT -> printString "!EXTRA INPUT IGNORED\n"
+                                      GT -> do printString "?"
+                                               inputVars (drop (length vals) vars)
+                                      EQ -> return ()
+            (Left _) -> error "Mismatched inputbuf in inputVars"
 
-checkInput (StringVar _ _) s = (StringVal s)
+checkInput :: Var -> String -> Maybe Val
+checkInput (StringVar _ _) s = Just (StringVal s)
 checkInput (IntVar var xs) s = checkInput (FloatVar var xs) s
 checkInput (FloatVar _ _) s =
     case readFloat s
-         of (Just v) -> (FloatVal v)
-	    _ -> Mismatch
--}
+         of (Just v) -> Just (FloatVal v)
+	    _ -> Nothing
 
 getVal :: Var -> Code Val
 getVal (FloatVar name []) =

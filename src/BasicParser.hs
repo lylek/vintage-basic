@@ -3,7 +3,7 @@
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
 
-module BasicParser(statementListP) where
+module BasicParser(statementListP,dataValsP,readFloat) where
 
 import Data.Char
 import Text.ParserCombinators.Parsec
@@ -34,27 +34,15 @@ lineNumP =
 floatLitP :: TokParser Literal
 floatLitP =
     do v <- floatP
+       skipSpace
        return (FloatLit v)
-
-sgnP :: TokParser String
-sgnP =
-    do sgn <- tokenP (==PlusTok) <|> tokenP (==MinusTok)
-       return (if (getTaggedVal sgn) == PlusTok then "" else "-")
 
 floatP :: TokParser Float
 floatP =
     do sgn <- option "" sgnP
        mant <- try float2P <|> float1P
        exp <- option "" expP
-       skipSpace
        return (read (sgn++mant++exp))
-
-expP :: TokParser String
-expP =
-    do tokenP (charTokTest (=='E'))
-       esgn <- option "" sgnP
-       i <- many1 (tokenP (charTokTest isDigit))
-       return ("E"++esgn++(taggedCharToksToString i))
 
 float1P :: TokParser String
 float1P =
@@ -67,6 +55,18 @@ float2P =
        tokenP (charTokTest (=='.'))
        f <- many (tokenP (charTokTest isDigit))
        return ("0"++taggedCharToksToString i++"."++taggedCharToksToString f++"0")
+
+sgnP :: TokParser String
+sgnP =
+    do sgn <- tokenP (==PlusTok) <|> tokenP (==MinusTok)
+       return (if (getTaggedVal sgn) == PlusTok then "" else "-")
+
+expP :: TokParser String
+expP =
+    do tokenP (charTokTest (=='E'))
+       esgn <- option "" sgnP
+       i <- many1 (tokenP (charTokTest isDigit))
+       return ("E"++esgn++(taggedCharToksToString i))
 
 stringLitP :: TokParser Literal
 stringLitP =
@@ -287,31 +287,57 @@ statementListP = do many (tokenP (==ColonTok))
 
 -- DATA STATEMENTS / INPUT BUFFER
 
--- We don't need to look for EOL characters, because these will only be
--- fed single lines.
+readFloat :: String -> Maybe Float
+readFloat s =
+    case parse floatP' "" s
+         of (Right fv) -> Just fv
+            _ -> Nothing
 
--- readFloat :: String -> Maybe Float
--- readFloat s =
---     case parse floatP "" s
---          of (Right fv) -> Just fv
---             _ -> Nothing
+floatP' :: Parser Float
+floatP' =
+    do sgn <- option "" sgnP'
+       mant <- try float2P' <|> float1P'
+       exp <- option "" expP'
+       return (read (sgn++mant++exp))
 
--- nonCommaP :: Parser Char
--- nonCommaP = satisfy (/=',')
+float1P' :: Parser String
+float1P' = many1 digit
 
--- stringP :: Parser String
--- stringP =
---     do char '"'
---        s <- manyTill anyChar (char '"')
---        return s
+float2P' :: Parser String
+float2P' =
+    do i <- many digit
+       char '.'
+       f <- many digit
+       return ("0"++i++"."++f++"0")
 
--- trim :: String -> String
--- trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
+sgnP' :: Parser String
+sgnP' =
+    do sgn <- char '+' <|> char '-'
+       return (if sgn == '+' then "" else "-")
 
--- dataValP :: Parser String
--- dataValP =
---     do s <- stringP <|> many nonCommaP
---        return (trim s)
+expP' :: Parser String
+expP' =
+    do char 'E'
+       esgn <- option "" sgnP'
+       i <- many1 digit
+       return ("E"++esgn++i)
 
--- dataValsP :: Parser [String]
--- dataValsP = sepBy1 dataValP (char ',')
+nonCommaP :: Parser Char
+nonCommaP = satisfy (/=',')
+
+stringP :: Parser String
+stringP =
+    do char '"'
+       s <- manyTill anyChar (char '"')
+       return s
+
+trim :: String -> String
+trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
+
+dataValP :: Parser String
+dataValP =
+    do s <- stringP <|> many nonCommaP
+       return (trim s)
+
+dataValsP :: Parser [String]
+dataValsP = sepBy1 dataValP (char ',')
