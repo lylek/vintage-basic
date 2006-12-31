@@ -73,6 +73,18 @@ type BasicExcep o i = Excep o BasicRT i
 type Code a = Basic (BasicExcep BasicResult ()) a
 type Program = Code (BasicExcep BasicResult ())
 
+runProgram :: Program -> IO ()
+runProgram prog =
+    do let errorDumper x passOn resume continue =
+               do if x == okValue
+                     then return ()
+                     else do state <- get
+                             printString (show x ++ " IN LINE " ++ show (lineNumber state))
+                  passOn False
+       hFlush stdout
+       runBasic (catchC errorDumper prog) -- why does this not work with trap?
+       return ()
+
 runBasic :: Basic o o -> IO (o,BasicState)
 runBasic m =
     do ft <- new (==) hashString

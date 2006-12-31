@@ -30,10 +30,7 @@ execute fileName =
        rawLines <- scanLines fileName text
        tokenizedLines <- sequence [tokenizeLine fileName rawLine | rawLine <- rawLines]
        parsedLines <- sequence [parseLine tokenizedLine | tokenizedLine <- tokenizedLines]
-       hFlush stdout
-       (Excep r _ _, BasicState lineNum _) <- runBasic $ interpLines parsedLines
-       putStrLn "\nResult:"
-       putStr (show r ++ " IN LINE " ++ show lineNum)
+       runProgram $ interpLines parsedLines
 
 scanLines :: String -> String -> IO [RawLine]
 scanLines fileName text =
