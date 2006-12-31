@@ -27,7 +27,7 @@ data Token = StringTok { getStringTokString :: String } | RemTok { getRemTokStri
            | IfTok | ThenTok | ForTok | ToTok | StepTok | NextTok
            | PrintTok | InputTok | RandomizeTok | ReadTok | RestoreTok
            | FnTok | EndTok
-           | SpaceTok | CharTok { getCharTokChar :: Char }
+           | SpaceTok | DotTok | CharTok { getCharTokChar :: Char }
              deriving (Eq,Show)
 
 keyword :: String -> Parser String
@@ -100,6 +100,7 @@ tokenMap =
      ("*", MulTok),
      ("/", DivTok),
      ("^", PowTok),
+     (".", DotTok),
      ("AND", AndTok),
      ("OR", OrTok),
      ("NOT", NotTok),

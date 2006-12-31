@@ -43,7 +43,7 @@ floatLitP =
 instance BasicFloatParser (Tagged Token) () where
     digitP = do tok <- tokenP (charTokTest isDigit)
                 return (getCharTokChar $ getTaggedVal tok)
-    dotP   = tokenP (charTokTest (=='.')) >> return '.'
+    dotP   = tokenP (==DotTok)            >> return '.'
     plusP  = tokenP (==PlusTok)           >> return '+'
     minusP = tokenP (==MinusTok)          >> return '-'
     charEP = tokenP (charTokTest (=='E')) >> return 'E'
