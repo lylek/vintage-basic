@@ -6,7 +6,7 @@ module BasicInterp where
 
 import Data.List
 import Data.Maybe
-import Text.ParserCombinators.Parsec(parse) -- for INPUT
+import Text.ParserCombinators.Parsec(parse)
 import Text.ParserCombinators.Parsec.Pos(sourceLine)
 import CPST
 import DurableTraps
@@ -14,8 +14,8 @@ import ExceptionHandlers
 import BasicLexCommon(Tagged(..))
 import BasicMonad
 import BasicResult
+import BasicRuntimeParser(dataValsP,readFloat)
 import BasicSyntax
-import BasicParser(dataValsP,readFloat) -- for INPUT
 
 data Val = FloatVal Float | StringVal String
 	 deriving (Eq,Show,Ord)
