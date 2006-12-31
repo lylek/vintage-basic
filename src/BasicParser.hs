@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
 -- BasicParser.hs
 -- Parses BASIC source code to produce abstract syntax.
 -- Also used at runtime to input values.
@@ -8,6 +10,7 @@ module BasicParser(statementListP) where
 import Data.Char
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
+import BasicFloatParser
 import BasicLexCommon
 import BasicSyntax
 import BasicTokenizer
@@ -37,36 +40,13 @@ floatLitP =
        skipSpace
        return (FloatLit v)
 
-floatP :: TokParser Float
-floatP =
-    do sgn <- option "" sgnP
-       mant <- try float2P <|> float1P
-       exp <- option "" expP
-       return (read (sgn++mant++exp))
-
-float1P :: TokParser String
-float1P =
-    do toks <- many1 (tokenP (charTokTest isDigit))
-       return $ taggedCharToksToString toks
-
-float2P :: TokParser String
-float2P =
-    do i <- many (tokenP (charTokTest isDigit))
-       tokenP (charTokTest (=='.'))
-       f <- many (tokenP (charTokTest isDigit))
-       return ("0"++taggedCharToksToString i++"."++taggedCharToksToString f++"0")
-
-sgnP :: TokParser String
-sgnP =
-    do sgn <- tokenP (==PlusTok) <|> tokenP (==MinusTok)
-       return (if (getTaggedVal sgn) == PlusTok then "" else "-")
-
-expP :: TokParser String
-expP =
-    do tokenP (charTokTest (=='E'))
-       esgn <- option "" sgnP
-       i <- many1 (tokenP (charTokTest isDigit))
-       return ("E"++esgn++(taggedCharToksToString i))
+instance BasicFloatParser (Tagged Token) () where
+    digitP = do tok <- tokenP (charTokTest isDigit)
+                return (getCharTokChar $ getTaggedVal tok)
+    dotP   = tokenP (charTokTest (=='.')) >> return '.'
+    plusP  = tokenP (==PlusTok)           >> return '+'
+    minusP = tokenP (==MinusTok)          >> return '-'
+    charEP = tokenP (charTokTest (=='E')) >> return 'E'
 
 stringLitP :: TokParser Literal
 stringLitP =
