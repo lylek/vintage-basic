@@ -75,14 +75,14 @@ type Program = Code (BasicExcep BasicResult ())
 
 runProgram :: Program -> IO ()
 runProgram prog =
-    do let errorDumper x passOn resume continue =
+    do let errorDumper x (passOn :: Bool -> Code ()) resume continue =
                do if x == okValue
                      then return ()
                      else do state <- get
                              printString (show x ++ " IN LINE " ++ show (lineNumber state))
-                  passOn False
+                  continue False
        hFlush stdout
-       runBasic (catchC errorDumper prog) -- why does this not work with trap?
+       runBasic (catchC errorDumper prog)
        return ()
 
 runBasic :: Basic o o -> IO (o,BasicState)
