@@ -1,0 +1,4 @@
+Questions:
+
+Why the rank-3 polymorphism in 'trap', but not in 'catchC'?
+It makes it difficult to call 'trap' properly. Is it really useful?
