@@ -39,5 +39,5 @@ infixr 5 |||
 -- one or more, longest match
 manyP' :: Parser t a => t a b -> t a [b]
 manyP' p = do b <- p
-	      bs <- manyP p
-	      return (b:bs)
+          bs <- manyP p
+          return (b:bs)

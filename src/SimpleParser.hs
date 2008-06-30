@@ -25,19 +25,19 @@ instance Eq a => Parser SimpleParser a where
 --instance (Eq a, Enum a, Bounded a) => Parser SimpleParser a where
     (SimpleParser f) $$ as = f as
     maybeP p = SimpleParser $ \as ->
-	       ifEmpty [([b],as') | (b,as') <- p $$ as]
-			   [([],as)]
+           ifEmpty [([b],as') | (b,as') <- p $$ as]
+               [([],as)]
     manyP p = SimpleParser $ \as ->
-	      ifEmpty [(b:bs,as'') |
-		       (b,as') <- p $$ as, (bs,as'') <- manyP p $$ as']
-			  [([],as)]
+          ifEmpty [(b:bs,as'') |
+               (b,as') <- p $$ as, (bs,as'') <- manyP p $$ as']
+              [([],as)]
     firstOfP p = SimpleParser $ \as ->
-		 case p $$ as
-		      of [] -> []
-			 (parse:_) -> [parse]
+         case p $$ as
+              of [] -> []
+             (parse:_) -> [parse]
     isItP pred = SimpleParser $ \as ->
-		 case as of [] -> []
-			    (a:as') -> if pred a then [(a,as')] else []
+         case as of [] -> []
+                (a:as') -> if pred a then [(a,as')] else []
     keyP s = SimpleParser $ \as ->
-	     let (b,s') = splitAt (length s) as in
-			  if b == s then [(b,s')] else []
+         let (b,s') = splitAt (length s) as in
+              if b == s then [(b,s')] else []

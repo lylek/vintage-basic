@@ -204,12 +204,12 @@ forSP =
 
 -- handles a NEXT and an optional variable list
 nextSP :: TokParser Statement
-nextSP =
-    do tokenP (==NextTok)
-       vs <- sepBy simpleVarP (tokenP (==CommaTok))
-       if length vs > 0
-          then return (NextS (Just vs))
-	  else return (NextS Nothing)
+nextSP = do
+    tokenP (==NextTok)
+    vs <- sepBy simpleVarP (tokenP (==CommaTok))
+    if length vs > 0
+        then return (NextS (Just vs))
+        else return (NextS Nothing)
 
 printSP :: TokParser Statement
 printSP =
@@ -254,13 +254,15 @@ remSP =
        return (RemS (getRemTokString (getTaggedVal tok)))
 
 statementP :: TokParser (Tagged Statement)
-statementP = do pos <- getPosition
-                st <- choice $ map try [printSP, inputSP, gotoSP, gosubSP, returnSP,
-                                        ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
+statementP = do input <- getInput
+                let pos = getPosTag (head input)
+                st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP,
+                    ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
                 return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]
-statementListP = do many (tokenP (==ColonTok))
-                    sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
-                    eof <?> "colon or end of line"
-                    return sl                    
+statementListP = do
+    many (tokenP (==ColonTok))
+    sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
+    eof <?> "colon or end of line"
+    return sl                    

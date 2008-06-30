@@ -3,15 +3,14 @@
 -- Lyle Kopnicky
 
 module BasicTokenizer
-    (Token(..),TokenizedLine(..),isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
+    (Token(..),TokenizedLine,isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
      taggedTokensP,tokenP,printToken) where
 
 import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
 import BasicLexCommon
 
-data TokenizedLine = TokenizedLine Line [Tagged Token]
-                   deriving (Show)
+type TokenizedLine = Tagged [Tagged Token]
 
 spaceTokP :: Parser Token
 spaceTokP = whiteSpaceChar >> whiteSpace >> return SpaceTok
@@ -148,17 +147,17 @@ taggedTokensP =
 -- The single-token parser used at the parser level
 tokenP :: (Token -> Bool) -> GenParser (Tagged Token) () (Tagged Token)
 tokenP test = token (printToken . getTaggedVal) getPosTag testTaggedToken
-      where testTaggedToken (Tagged pos tok) =
-		if test tok then Just (Tagged pos tok) else Nothing
+    where testTaggedToken (Tagged pos tok) =
+            if test tok then Just (Tagged pos tok) else Nothing
 
 printToken tok =
-    case (lookup tok revTokenMap)
-         of (Just s) -> s
-	    Nothing ->
-		case tok
-		     of (CharTok c) -> [c]
-			(DataTok s) -> "DATA" ++ s
-			(RemTok s) -> "REM" ++ s
-			SpaceTok -> " "
-			(StringTok s) -> "\"" ++ s ++ "\""
-			otherwise -> error "printToken: unrecognized token."
+    case (lookup tok revTokenMap) of
+        (Just s) -> s
+        Nothing ->
+            case tok of
+                (CharTok c) -> [c]
+                (DataTok s) -> "DATA" ++ s
+                (RemTok s) -> "REM" ++ s
+                SpaceTok -> " "
+                (StringTok s) -> "\"" ++ s ++ "\""
+                otherwise -> error "printToken: unrecognized token."

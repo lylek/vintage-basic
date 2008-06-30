@@ -18,8 +18,8 @@ main = do
    modulesWithTests <-
        sequence [do moduleCode <- readFile (testModule ++ ".hs")
                     putStrLn ("  " ++ testModule)
-	            let tests = findTests moduleCode
-	            sequence_ [putStrLn ("    " ++ test) | test <- tests]
+                    let tests = findTests moduleCode
+                    sequence_ [putStrLn ("    " ++ test) | test <- tests]
                     return (testModule, findTests moduleCode)
                  | testModule <- testModules]
    let testCode = genTestDriver modulesWithTests

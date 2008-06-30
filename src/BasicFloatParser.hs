@@ -17,30 +17,30 @@ class BasicFloatParser tok st where
     charEP :: GenParser tok st Char
 
     floatP :: GenParser tok st Float
-    floatP =
-        do sgn <- option "" sgnP
-           mant <- try float2P <|> float1P
-           exp <- option "" expP
-           return (read (sgn++mant++exp))
+    floatP = do
+        sgn <- option "" sgnP
+        mant <- try float2P <|> float1P
+        exp <- option "" expP
+        return (read (sgn++mant++exp))
 
     float1P :: GenParser tok st String
     float1P = many1 digitP
 
     float2P :: GenParser tok st String
-    float2P =
-        do i <- many digitP
-           dotP
-           f <- many digitP
-           return ("0"++i++"."++f++"0")
+    float2P = do
+        i <- many digitP
+        dotP
+        f <- many digitP
+        return ("0"++i++"."++f++"0")
 
     sgnP :: GenParser tok st String
-    sgnP =
-        do sgn <- plusP <|> minusP
-           return (if sgn == '+' then "" else "-")
+    sgnP = do
+        sgn <- plusP <|> minusP
+        return (if sgn == '+' then "" else "-")
 
     expP :: GenParser tok st String
-    expP =
-        do charEP
-           esgn <- option "" sgnP
-           i <- many1 digitP
-           return ("E"++esgn++i)
+    expP = do
+        charEP
+        esgn <- option "" sgnP
+        i <- many1 digitP
+        return ("E"++esgn++i)

@@ -11,9 +11,9 @@ import BasicSyntax
 -- If it's a round number, print it as an integer.
 printLit :: Literal -> String
 printLit (FloatLit v) = let i = floor v :: Integer
-			    in if fromInteger i == v
-			       then show i
-			       else show v
+                in if fromInteger i == v
+                   then show i
+                   else show v
 printLit (StringLit s) = show s
 
 printVar :: Var -> String
@@ -61,19 +61,19 @@ printStatement (IfS x ss) =
     "IF " ++ printExpr x ++ " THEN " ++ printStatementList ss
 printStatement (ForS v x1 x2 x3) =
     "FOR " ++ printVar v ++ "=" ++ printExpr x1 ++ " TO " ++ printExpr x2
-	   ++ (case x3
-	       of (LitX (FloatLit 1)) -> ""
-	          _ -> " STEP " ++ printExpr x3)
-	       
+       ++ (case x3
+           of (LitX (FloatLit 1)) -> ""
+              _ -> " STEP " ++ printExpr x3)
+           
 printStatement (NextS Nothing) = "NEXT"
 printStatement (NextS (Just vs)) =
     "NEXT " ++ (concat $ intersperse "," (map printVar vs))
 printStatement (PrintS xs t) =
     "PRINT " ++ (concat $ intersperse ";" (map printExpr xs))
-	     ++ (if t then "" else ";")
+         ++ (if t then "" else ";")
 printStatement (InputS prompt vs) =
     "INPUT " ++ (case prompt of Nothing -> ""; Just ps -> show ps ++ ";")
-		 ++ (concat $ intersperse "," (map printVar vs))
+         ++ (concat $ intersperse "," (map printVar vs))
 printStatement EndS = "END"
 printStatement (DimS arr) = "DIM " ++ printVar arr
 printStatement (RemS s) = "REM" ++ s

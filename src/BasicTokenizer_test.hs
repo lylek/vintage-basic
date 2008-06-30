@@ -1,9 +1,8 @@
 module BasicTokenizer_test where
 
-import Data.List(isInfixOf)
 import Test.HUnit
-import Text.ParserCombinators.Parsec
-import BasicLexCommon(Tagged(..))
+import BasicAsserts
+import BasicLineScanner
 import BasicTokenizer(Token(..),taggedTokensP,printToken)
 
 test_taggedTokensP = TestCase $ do
@@ -31,40 +30,22 @@ test_taggedTokensP = TestCase $ do
               cols = scanl (+) 1 lens
               in zip cols toks
   let expectedColAndTokss = map accumLensWToks expectedLenAndTokss
-  let testLine text expectedColAndToks =
-          case parse taggedTokensP "" text of
-               (Left err) -> assertFailure ("parse error: " ++ show err)
-               (Right taggedToks) ->
-                   assertEqual "" expectedColAndToks
-                                   [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks]
-  sequence_ $ zipWith testLine source expectedColAndTokss
+  sequence_ $ zipWith (assertColAndParseResult taggedTokensP) source expectedColAndTokss
 
 test_capitalizes_lowercase_chars = TestCase $ do
    let source = "azAZ"
-   let expectedColAndToks = [(1,CharTok 'A'), (2,CharTok 'Z'), (3,CharTok 'A'), (4, CharTok 'Z')]
-   case parse taggedTokensP "" source of
-            (Left err) -> assertFailure ("parse error: " ++ show err)
-            (Right taggedToks) ->
-                assertEqual "" expectedColAndToks
-                                 [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks]
+   let expected = [(1,CharTok 'A'), (2,CharTok 'Z'), (3,CharTok 'A'), (4, CharTok 'Z')]
+   assertColAndParseResult taggedTokensP source expected
 
 test_eats_spaces_after_most_tokens_but_not_chars = TestCase $ do
    let source = "   ,   +  AND  ORX   YZ  "
    let expectedColAndToks = [(1,SpaceTok), (4,CommaTok), (8,PlusTok), (11,AndTok), (16,OrTok),
                              (18,CharTok 'X'), (19,SpaceTok), (22,CharTok 'Y'), (23,CharTok 'Z'),
                              (24,SpaceTok)]
-   case parse taggedTokensP "" source of
-            (Left err) -> assertFailure ("parse error: " ++ show err)
-            (Right taggedToks) ->
-                assertEqual "" expectedColAndToks
-                                 [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks]
+   assertColAndParseResult taggedTokensP source expectedColAndToks
 
 test_reports_error_for_an_illegal_char = TestCase $ do
-   sequence_ [ case parse taggedTokensP "" [illegalChar] of
-                  (Left err) -> assertBool ("Parser reported wrong error:" ++ show err)
-                     (isInfixOf "expecting legal BASIC character" (show err))
-                  (Right rls) -> assertFailure ("Parser didn't report error for illegal character "
-                                  ++ show illegalChar)
+   sequence_ [ assertParseError taggedTokensP [illegalChar] "expecting legal BASIC character"
                | illegalChar <- "~`!@#&_[]{}\\'\n\a" ]
 
 test_printToken = TestCase $ do
