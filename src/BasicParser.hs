@@ -80,21 +80,23 @@ stringVarP = do name <- varBaseP
 
 -- Look for string and int vars first because of $ and % suffixes.
 simpleVarP :: TokParser Var
-simpleVarP = try stringVarP <|> try intVarP <|> floatVarP
+simpleVarP = do
+    v <- try stringVarP <|> try intVarP <|> floatVarP
+    skipSpace
+    return v
 
 arrP :: TokParser Var
 arrP =
     do v <- simpleVarP
        xs <- argsP
+       skipSpace
        return (case v
                  of FloatVar name [] -> FloatVar name xs
                     IntVar name [] -> IntVar name xs
                     StringVar name [] -> StringVar name xs)
 
 varP :: TokParser Var
-varP = do v <- try arrP <|> simpleVarP
-          skipSpace
-          return v
+varP = try arrP <|> simpleVarP
 
 -- BUILTINS
 
