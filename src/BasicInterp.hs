@@ -163,6 +163,10 @@ evalBuiltin b = case b of
                 return (StringVal (take iv sv))
         _ -> typeMismatch
       )
+    LenBI -> (\xs -> case xs of
+        [StringVal sv] -> return (FloatVal (fromIntegral (length sv)))
+        _ -> typeMismatch
+      )
     LogBI -> liftFVBuiltin1 log
     MidBI -> (\xs -> case xs of
         [StringVal sv, FloatVal fv] ->

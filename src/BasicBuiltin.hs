@@ -1,7 +1,7 @@
 module BasicBuiltin where
 
 data Builtin =
-    AbsBI | AscBI | AtnBI | ChrBI | CosBI | ExpBI | IntBI | LeftBI | LogBI | MidBI
+    AbsBI | AscBI | AtnBI | ChrBI | CosBI | ExpBI | IntBI | LeftBI | LenBI | LogBI | MidBI
     | RightBI | RndBI | SgnBI | SinBI | SpcBI | SqrBI | TabBI | TanBI
     deriving (Show,Eq)
 
@@ -14,6 +14,7 @@ builtinToStrAssoc = [
     (ExpBI,   "EXP"   ),
     (IntBI,   "INT"   ),
     (LeftBI,  "LEFT$" ),
+    (LenBI,   "LEN"   ),
     (LogBI,   "LOG"   ),
     (MidBI,   "MID$"  ),
     (RightBI, "RIGHT$"),
