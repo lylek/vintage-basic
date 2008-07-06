@@ -4,6 +4,7 @@
 
 module BasicSyntax where
 
+import BasicBuiltin(Builtin)
 import BasicLexCommon(Tagged(..))
 
 type Label = Int
@@ -22,14 +23,11 @@ data Var =
   | StringVar String [Expr]
     deriving (Show,Eq)
 
-data Builtin = AbsBI Expr | IntBI Expr | RndBI Expr
-             | TabBI Expr
-               deriving (Show)
-
-data BinOp = AddOp | SubOp | MulOp | DivOp | PowOp
-           | EqOp | NEOp | LTOp | LEOp | GTOp | GEOp
-           | AndOp | OrOp
-           deriving (Enum,Show,Eq)
+data BinOp =
+    AddOp | SubOp | MulOp | DivOp | PowOp
+    | EqOp | NEOp | LTOp | LEOp | GTOp | GEOp
+    | AndOp | OrOp
+    deriving (Enum,Show,Eq)
 
 data Expr =
     LitX Literal
@@ -37,6 +35,7 @@ data Expr =
   | MinusX Expr
   | NotX Expr
   | BinX BinOp Expr Expr
+  | BuiltinX Builtin [Expr]
   | ParenX Expr
     deriving (Show,Eq)
 
@@ -52,8 +51,9 @@ data Statement =
   | PrintS [Expr] Bool -- True if should print newline
   | InputS (Maybe String) [Var]
   | EndS
+  | RandomizeS
   | RemS String
     deriving (Show,Eq)
 
 data Line = Line Label [Tagged Statement]
-          deriving (Show,Eq)
+    deriving (Show,Eq)

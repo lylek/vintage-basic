@@ -7,6 +7,8 @@ module BasicPrinter where
 import List
 import BasicLexCommon
 import BasicSyntax
+import BasicBuiltin(Builtin,builtinToStrAssoc)
+import Data.Maybe(fromJust)
 
 -- If it's a round number, print it as an integer.
 printLit :: Literal -> String
@@ -41,6 +43,9 @@ printOp GEOp = ">="
 printOp AndOp = " AND "
 printOp OrOp = " OR "
 
+printBuiltin :: Builtin -> String
+printBuiltin b = fromJust $ lookup b builtinToStrAssoc
+
 printExpr :: Expr -> String
 printExpr (LitX lit) = printLit lit
 printExpr (VarX var) = printVar var
@@ -48,6 +53,7 @@ printExpr (MinusX x) = "-" ++ printExpr x
 printExpr (NotX x) = "NOT " ++ printExpr x
 printExpr (ParenX x) = "(" ++ printExpr x ++ ")"
 printExpr (BinX op x1 x2) = printExpr x1 ++ printOp op ++ printExpr x2
+printExpr (BuiltinX b xs) = printBuiltin b ++ printArgs xs
 
 printTaggedStatement :: Tagged Statement -> String
 printTaggedStatement (Tagged pos statement) = printStatement statement

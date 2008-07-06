@@ -1,0 +1,5 @@
+10 ?RND()
+20 ?RND()
+30 RANDOMIZE
+40 ?RND()
+50 ?RND()

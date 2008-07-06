@@ -2,12 +2,14 @@ module BasicTokenizer_test where
 
 import Test.HUnit
 import BasicAsserts
+import BasicBuiltin(Builtin(..))
 import BasicLineScanner
 import BasicTokenizer(Token(..),taggedTokensP,printToken)
 
 test_taggedTokensP = TestCase $ do
   let source = [
                 ",:;()$%=<><=>=><+-*/^.?",
+                "ABSASCCHR$COSEXPINTLEFT$LOGMID$RIGHT$RNDSGNSPCSQRTABTAN",
                 "ANDORNOTLETDIMONGOSUBRETURNIFTHENFORTOSTEPNEXTPRINTINPUT",
                 "RANDOMIZEREADRESTOREFNEND",
                 "\"hello\"REMGOFORTH\"ANDREAD\"",
@@ -18,6 +20,12 @@ test_taggedTokensP = TestCase $ do
                          (1,DollarTok), (1,PercentTok), (1,EqTok), (2,NETok), (2,LETok), (2,GETok),
                          (1,GTTok), (1,LTTok), (1,PlusTok), (1,MinusTok), (1,MulTok), (1,DivTok),
                          (1,PowTok), (1,DotTok), (1,PrintTok)],
+                        [(3,BuiltinTok AbsBI), (3,BuiltinTok AscBI), (4,BuiltinTok ChrBI),
+                         (3,BuiltinTok CosBI), (3,BuiltinTok ExpBI), (3,BuiltinTok IntBI),
+                         (5,BuiltinTok LeftBI), (3,BuiltinTok LogBI), (4,BuiltinTok MidBI),
+                         (6,BuiltinTok RightBI), (3,BuiltinTok RndBI), (3,BuiltinTok SgnBI),
+                         (3,BuiltinTok SpcBI), (3,BuiltinTok SqrBI), (3,BuiltinTok TabBI),
+                         (3,BuiltinTok TanBI)],
                         [(3,AndTok), (2,OrTok), (3,NotTok), (3,LetTok), (3,DimTok), (2,OnTok),
                          (2,GoTok), (3,SubTok), (6,ReturnTok), (2,IfTok), (4,ThenTok), (3,ForTok),
                          (2,ToTok), (4,StepTok), (4,NextTok), (5,PrintTok), (5,InputTok)],

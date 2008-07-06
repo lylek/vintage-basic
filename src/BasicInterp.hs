@@ -11,6 +11,7 @@ import Text.ParserCombinators.Parsec.Pos(sourceLine)
 import CPST
 import DurableTraps
 import ExceptionHandlers
+import BasicBuiltin(Builtin(..))
 import BasicLexCommon(Tagged(..))
 import BasicMonad
 import BasicResult
@@ -62,23 +63,31 @@ unSV (StringVal sv) = sv
 
 liftFVOp1 :: (Float -> Float) -> Val -> Code Val
 liftFVOp1 f (FloatVal v1) = return $ FloatVal $ f v1
-liftFVOp1 f (StringVal _) = valError "!TYPE MISMATCH IN EXPRESSION"
+liftFVOp1 f (StringVal _) = typeMismatch
+
+liftFVBuiltin1 :: (Float -> Float) -> [Val] -> Code Val
+liftFVBuiltin1 f [FloatVal v1] = return $ FloatVal $ f v1
+liftFVBuiltin1 f _ = typeMismatch
 
 liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
 liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
-liftFVOp2 f _             _             = valError "!TYPE MISMATCH IN EXPRESSION"
+liftFVOp2 f _             _             = typeMismatch
 
 liftFVBOp2 :: (Float -> Float -> Bool) -> Val -> Val -> Code Val
 liftFVBOp2 f (FloatVal v1) (FloatVal v2) = return $ boolToVal $ f v1 v2
-liftFVBOp2 f _             _             = valError "!TYPE MISMATCH IN EXPRESSION"
+liftFVBOp2 f _             _             = typeMismatch
 
 liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
 liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
-liftSVOp2 f _              _              = valError "!TYPE MISMATCH IN EXPRESSION"
+liftSVOp2 f _              _              = typeMismatch
 
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work
 valError :: String -> Code Val
 valError s = basicError s >> return (FloatVal 0)
+
+typeMismatch = valError "!TYPE MISMATCH IN EXPRESSION"
+invalidArgument = valError "!INVALID ARGUMENT"
+divisionByZero = valError "!DIVISION BY ZERO"
 
 eval :: Expr -> Code Val
 eval (LitX (FloatLit v)) = return (FloatVal v)
@@ -94,6 +103,9 @@ eval (BinX op x1 x2) = do
     v1 <- eval x1
     v2 <- eval x2
     evalBinOp op v1 v2
+eval (BuiltinX b xs) = do
+    vs <- mapM eval xs
+    evalBuiltin b vs
 eval (ParenX x) = eval x
 
 evalBinOp :: BinOp -> Val -> Val -> Code Val
@@ -109,9 +121,9 @@ evalBinOp op =
             case (v1,v2) of
                 (FloatVal fv1, FloatVal fv2) ->
                     if fv2==0
-                        then valError "!DIVISION BY ZERO"
+                        then divisionByZero
                         else return $ FloatVal $ fv1/fv2
-                (_,_) -> valError "!TYPE MISMATCH IN EXPRESSION"
+                (_,_) -> typeMismatch
         PowOp -> liftFVOp2 (**)
         EqOp -> liftFVBOp2 (==)
         NEOp -> liftFVBOp2 (/=)
@@ -122,6 +134,81 @@ evalBinOp op =
         AndOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 && v2/=0 then v1 else 0
         OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
 -- TO DO: check defined behavior of AND & OR
+
+evalBuiltin :: Builtin -> [Val] -> Code Val
+evalBuiltin b = case b of
+    AbsBI -> liftFVBuiltin1 abs
+    AscBI -> (\xs -> case xs of
+        [StringVal v] ->
+            if length v == 0
+            then invalidArgument
+            else return $ FloatVal (fromIntegral (fromEnum (head v)))
+        _ -> typeMismatch
+      )
+    AtnBI -> liftFVBuiltin1 atan
+    ChrBI -> (\xs -> case xs of
+        [FloatVal v] ->
+            let iv = floor v :: Int in
+                if iv < 0 || iv > 255
+                then invalidArgument
+                else return $ StringVal ([toEnum iv])
+        _ -> typeMismatch
+      )
+    CosBI -> liftFVBuiltin1 cos
+    ExpBI -> liftFVBuiltin1 exp
+    IntBI -> liftFVBuiltin1 (fromInteger . floor)
+    LeftBI -> (\xs -> case xs of
+        [StringVal sv, FloatVal fv] ->
+            let iv = floor fv in
+                return (StringVal (take iv sv))
+        _ -> typeMismatch
+      )
+    LogBI -> liftFVBuiltin1 log
+    MidBI -> (\xs -> case xs of
+        [StringVal sv, FloatVal fv] ->
+            let iv = floor fv in
+                return (StringVal (drop (iv-1) sv))
+        [StringVal sv, FloatVal fv1, FloatVal fv2] ->
+            let iv1 = floor fv1
+                iv2 = floor fv2
+            in
+                return (StringVal (take iv2 (drop (iv1-1) sv)))
+        _ -> typeMismatch
+      )
+    RightBI -> (\xs -> case xs of
+        [StringVal sv, FloatVal fv] ->
+            let iv = floor fv in
+                return (StringVal (drop (length sv - iv) sv))
+        _ -> typeMismatch
+      )
+    RndBI -> (\xs -> case xs of
+        [] -> do
+            rv <- getRandom
+            return (FloatVal rv)
+        _ -> typeMismatch
+      )
+    SgnBI -> liftFVBuiltin1 (\v -> if v < 0 then -1 else if v > 0 then 1 else 0)
+    SpcBI -> (\xs -> case xs of
+        [FloatVal fv] ->
+            let iv = floor fv in
+                return (StringVal (replicate iv ' '))
+        _ -> typeMismatch
+      )
+    SqrBI -> liftFVBuiltin1 sqrt
+    TabBI -> (\xs -> case xs of
+        [FloatVal fv] ->
+            let destCol = floor fv in
+                if (destCol < 0)
+                  then invalidArgument
+                  else do
+                    curCol <- getOutputColumn
+                    return $ StringVal $
+                        if curCol > destCol
+                          then "\n" ++ replicate destCol ' '
+                          else replicate (destCol - curCol) ' '
+        _ -> typeMismatch
+      )
+    TanBI -> liftFVBuiltin1 tan
 
 -- Interpret a tagged statement.
 -- Sets the line number in the state, then passes the statement on to interpS.
@@ -165,9 +252,8 @@ interpS _ (LetS var x) = do
     setVal var val
 
 interpS _ (PrintS xs nl) = do
-    vals <- mapM eval xs
+    mapM (\x -> eval x >>= printVal) xs
     -- check for type mismatches
-    mapM_ printVal vals
     if nl then printString "\n" else return ()
 
 interpS _ (InputS mPrompt vars) = do
@@ -226,6 +312,8 @@ interpS jumpTable (GosubS lab) =
        catchC f (fromJust maybeCode)
        return ()
 interpS _ ReturnS = raiseCC Return
+
+interpS _ RandomizeS = seedRandomFromTime
 
 interpNextVar (FloatVar v []) = raiseCC (Next (Just v))
 interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"

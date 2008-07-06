@@ -19,6 +19,8 @@ import Data.Array.IO
 import Data.Ix
 import Data.Maybe
 import System.IO
+import System.Random
+import System.Time
 import BasicResult
 import CPST
 import CPSTInstances
@@ -63,7 +65,8 @@ instance BasicType String where
 
 data BasicState = BasicState {
     lineNumber :: Int, -- for error reporting
-    outputColumn :: Int -- for TAB() function
+    outputColumn :: Int, -- for TAB() function
+    randomGen :: StdGen
 }
 
 type BasicRT = ReaderT BasicStore (StateT BasicState IO)
@@ -95,7 +98,7 @@ runBasic m = do
     iat <- new (==) hashString
     sat <- new (==) hashString
     let store = BasicStore ft it st fat iat sat
-    runStateT (runReaderT (runCPST m) store) (BasicState 0 0)
+    runStateT (runReaderT (runCPST m) store) (BasicState 0 0 (mkStdGen 0))
 
 assert cond err = if cond then return () else basicError err
 
@@ -173,10 +176,43 @@ setLineNumber :: Int -> Basic o ()
 setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })
 
 printString :: String -> Basic o ()
-printString s = liftIO $ putStr s >> hFlush stdout
+printString s = do
+    state <- get
+    let startCol = outputColumn state
+    liftIO $ putStr s >> hFlush stdout
+    put (state { outputColumn = endCol startCol s })
+
+endCol :: Int -> String -> Int    
+endCol startCol "" = startCol
+endCol startCol ('\n' : s) = endCol 0 s
+endCol startCol (c : s) = endCol (startCol + 1) s
+
+getOutputColumn :: Code Int
+getOutputColumn = do
+    state <- get
+    return $ outputColumn state
 
 getString :: Basic o String
 getString = liftIO $ hFlush stdout >> getLine
+
+secondsSinceMidnight :: Code Int
+secondsSinceMidnight = do
+    clockTime <- liftIO $ getClockTime
+    calendarTime <- liftIO $ toCalendarTime clockTime
+    return ((ctHour calendarTime * 24 + ctMin calendarTime) * 60 + ctSec calendarTime)
+
+seedRandom :: Int -> Code ()
+seedRandom i = modify (\state -> state { randomGen = (mkStdGen i) })
+
+seedRandomFromTime :: Code ()
+seedRandomFromTime = secondsSinceMidnight >>= seedRandom
+
+getRandom :: Code Float
+getRandom = do
+    state <- get
+    let (r, g) = random (randomGen state)
+    put (state { randomGen = g })
+    return r
 
 {-
 -- A sample for testing the monad.

@@ -4,10 +4,11 @@
 
 module BasicTokenizer
     (Token(..),TokenizedLine,isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
-     taggedTokensP,tokenP,printToken) where
+     isBuiltinTok,taggedTokensP,tokenP,printToken) where
 
 import Data.Char(toUpper)
 import Text.ParserCombinators.Parsec
+import BasicBuiltin(Builtin,builtinToStrAssoc)
 import BasicLexCommon
 
 type TokenizedLine = Tagged [Tagged Token]
@@ -22,6 +23,7 @@ data Token = StringTok { getStringTokString :: String } | RemTok { getRemTokStri
            | EqTok | NETok | LETok | LTTok | GETok | GTTok
            | PlusTok | MinusTok | MulTok | DivTok | PowTok
            | AndTok | OrTok | NotTok
+           | BuiltinTok Builtin
            | LetTok | DimTok | OnTok | GoTok | SubTok | ReturnTok
            | IfTok | ThenTok | ForTok | ToTok | StepTok | NextTok
            | PrintTok | InputTok | RandomizeTok | ReadTok | RestoreTok
@@ -79,58 +81,62 @@ taggedCharToksToString = map (getCharTokChar . getTaggedVal)
 
 -- still need: numeric literals (incl labels), vars
 
-tokenMap =
+strToTokAssoc =
     [
-     (",", CommaTok),
-     (":", ColonTok),
-     (";", SemiTok),
-     ("(", LParenTok),
-     (")", RParenTok),
-     ("$", DollarTok),
-     ("%", PercentTok),
-     ("=", EqTok),
-     ("<>", NETok),
-     ("<=", LETok),
-     ("<", LTTok),
-     (">=", GETok),
-     (">", GTTok),
-     ("+", PlusTok),
-     ("-", MinusTok),
-     ("*", MulTok),
-     ("/", DivTok),
-     ("^", PowTok),
-     (".", DotTok),
-     ("AND", AndTok),
-     ("OR", OrTok),
-     ("NOT", NotTok),
-     ("LET", LetTok),
-     ("DIM", DimTok),
-     ("ON", OnTok),
-     ("GO", GoTok),
-     ("SUB", SubTok),
-     ("RETURN", ReturnTok),
-     ("IF", IfTok),
-     ("THEN", ThenTok),
-     ("FOR", ForTok),
-     ("TO", ToTok),
-     ("STEP", StepTok),
-     ("NEXT", NextTok),
-     ("PRINT", PrintTok),
-     ("?", PrintTok),
-     ("INPUT", InputTok),
+     (",",         CommaTok),
+     (":",         ColonTok),
+     (";",         SemiTok),
+     ("(",         LParenTok),
+     (")",         RParenTok),
+     ("$",         DollarTok),
+     ("%",         PercentTok),
+     ("=",         EqTok),
+     ("<>",        NETok),
+     ("<=",        LETok),
+     ("<",         LTTok),
+     (">=",        GETok),
+     (">",         GTTok),
+     ("+",         PlusTok),
+     ("-",         MinusTok),
+     ("*",         MulTok),
+     ("/",         DivTok),
+     ("^",         PowTok),
+     (".",         DotTok),
+     ("AND",       AndTok),
+     ("OR",        OrTok),
+     ("NOT",       NotTok),
+     ("LET",       LetTok),
+     ("DIM",       DimTok),
+     ("ON",        OnTok),
+     ("GO",        GoTok),
+     ("SUB",       SubTok),
+     ("RETURN",    ReturnTok),
+     ("IF",        IfTok),
+     ("THEN",      ThenTok),
+     ("FOR",       ForTok),
+     ("TO",        ToTok),
+     ("STEP",      StepTok),
+     ("NEXT",      NextTok),
+     ("PRINT",     PrintTok),
+     ("?",         PrintTok),
+     ("INPUT",     InputTok),
      ("RANDOMIZE", RandomizeTok),
-     ("READ", ReadTok),
-     ("RESTORE", RestoreTok),
-     ("FN", FnTok),
-     ("END", EndTok)
-    ]
+     ("READ",      ReadTok),
+     ("RESTORE",   RestoreTok),
+     ("FN",        FnTok),
+     ("END",       EndTok)
+  ] ++ [(s, BuiltinTok b) | (b,s) <- builtinToStrAssoc]
 
-revTokenMap = [(t,s) | (s,t) <- tokenMap]
+tokToStrAssoc = [(t,s) | (s,t) <- strToTokAssoc]
 
 anyTokP :: Parser Token
 anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
-                  ++ [do keyword s; whiteSpace; return t | (s,t) <- tokenMap]
+                  ++ [do keyword s; whiteSpace; return t | (s,t) <- strToTokAssoc]
                   ++ [charTokP]) <?> "legal BASIC character"
+
+isBuiltinTok :: Token -> Bool
+isBuiltinTok (BuiltinTok _) = True
+isBuiltinTok _              = False
 
 taggedTokenP :: Parser (Tagged Token)
 taggedTokenP =
@@ -151,7 +157,7 @@ tokenP test = token (printToken . getTaggedVal) getPosTag testTaggedToken
             if test tok then Just (Tagged pos tok) else Nothing
 
 printToken tok =
-    case (lookup tok revTokenMap) of
+    case (lookup tok tokToStrAssoc) of
         (Just s) -> s
         Nothing ->
             case tok of

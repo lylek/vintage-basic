@@ -96,6 +96,14 @@ varP = do v <- try arrP <|> simpleVarP
           skipSpace
           return v
 
+-- BUILTINS
+
+builtinXP :: TokParser Expr
+builtinXP = do
+    (Tagged _ (BuiltinTok b)) <- tokenP isBuiltinTok
+    xs <- argsP
+    return (BuiltinX b xs)
+
 -- EXPRESSIONS
 
 litXP :: TokParser Expr
@@ -123,7 +131,7 @@ parenXP =
        return (ParenX x)
 
 primXP :: TokParser Expr
-primXP = parenXP <|> litXP <|> varXP
+primXP = parenXP <|> litXP <|> builtinXP <|> varXP
 
 opTable :: OperatorTable (Tagged Token) () Expr
 opTable =
@@ -248,6 +256,11 @@ dimSP =
        arr <- arrP
        return (DimS arr)
 
+randomizeSP :: TokParser Statement
+randomizeSP = do
+    tok <- tokenP (==RandomizeTok)
+    return RandomizeS
+
 remSP :: TokParser Statement
 remSP =
     do tok <- tokenP isRemTok
@@ -257,7 +270,7 @@ statementP :: TokParser (Tagged Statement)
 statementP = do input <- getInput
                 let pos = getPosTag (head input)
                 st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP,
-                    ifSP, forSP, nextSP, endSP, dimSP, remSP, letSP]
+                    ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, remSP, letSP]
                 return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]
