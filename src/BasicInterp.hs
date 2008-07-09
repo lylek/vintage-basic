@@ -81,6 +81,10 @@ liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
 liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
 liftSVOp2 f _              _              = typeMismatch
 
+liftSVBOp2 :: (String -> String -> Bool) -> Val -> Val -> Code Val
+liftSVBOp2 f (StringVal v1) (StringVal v2) = return $ boolToVal $ f v1 v2
+liftSVBOp2 f _             _               = typeMismatch
+
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work
 valError :: String -> Code Val
 valError s = basicError s >> return (FloatVal 0)
@@ -125,7 +129,10 @@ evalBinOp op =
                         else return $ FloatVal $ fv1/fv2
                 (_,_) -> typeMismatch
         PowOp -> liftFVOp2 (**)
-        EqOp -> liftFVBOp2 (==)
+        EqOp -> \v1 v2 ->
+            case (v1,v2) of
+                (FloatVal _, FloatVal _)   -> liftFVBOp2 (==) v1 v2
+                (StringVal _, StringVal _) -> liftSVBOp2 (==) v1 v2
         NEOp -> liftFVBOp2 (/=)
         LTOp -> liftFVBOp2 (<)
         LEOp -> liftFVBOp2 (<=)
