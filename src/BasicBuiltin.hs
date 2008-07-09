@@ -2,7 +2,7 @@ module BasicBuiltin where
 
 data Builtin =
     AbsBI | AscBI | AtnBI | ChrBI | CosBI | ExpBI | IntBI | LeftBI | LenBI | LogBI | MidBI
-    | RightBI | RndBI | SgnBI | SinBI | SpcBI | SqrBI | TabBI | TanBI
+    | RightBI | RndBI | SgnBI | SinBI | SpcBI | StrBI | SqrBI | TabBI | TanBI | ValBI
     deriving (Show,Eq)
 
 builtinToStrAssoc = [
@@ -21,7 +21,9 @@ builtinToStrAssoc = [
     (RndBI,   "RND"   ),
     (SgnBI,   "SGN"   ),
     (SpcBI,   "SPC"   ),
+    (StrBI,   "STR$"  ),
     (SqrBI,   "SQR"   ),
     (TabBI,   "TAB"   ),
-    (TanBI,   "TAN"   )
+    (TanBI,   "TAN"   ),
+    (ValBI,   "VAL"   )
   ]

@@ -9,7 +9,7 @@ import BasicTokenizer(Token(..),taggedTokensP,printToken)
 test_taggedTokensP = TestCase $ do
   let source = [
                 ",:;()$%=<><=>=><+-*/^.?",
-                "ABSASCCHR$COSEXPINTLEFT$LENLOGMID$RIGHT$RNDSGNSPCSQRTABTAN",
+                "ABSASCCHR$COSEXPINTLEFT$LENLOGMID$RIGHT$RNDSGNSPCSQRSTR$TABTANVAL",
                 "ANDORNOTLETDIMONGOSUBRETURNIFTHENFORTOSTEPNEXTPRINTINPUT",
                 "RANDOMIZEREADRESTOREFNEND",
                 "\"hello\"REMGOFORTH\"ANDREAD\"",
@@ -25,7 +25,8 @@ test_taggedTokensP = TestCase $ do
                          (5,BuiltinTok LeftBI), (3,BuiltinTok LenBI), (3,BuiltinTok LogBI),
                          (4,BuiltinTok MidBI), (6,BuiltinTok RightBI), (3,BuiltinTok RndBI),
                          (3,BuiltinTok SgnBI), (3,BuiltinTok SpcBI), (3,BuiltinTok SqrBI),
-                         (3,BuiltinTok TabBI), (3,BuiltinTok TanBI)],
+                         (4,BuiltinTok StrBI), (3,BuiltinTok TabBI), (3,BuiltinTok TanBI),
+                         (3,BuiltinTok ValBI)],
                         [(3,AndTok), (2,OrTok), (3,NotTok), (3,LetTok), (3,DimTok), (2,OnTok),
                          (2,GoTok), (3,SubTok), (6,ReturnTok), (2,IfTok), (4,ThenTok), (3,ForTok),
                          (2,ToTok), (4,StepTok), (4,NextTok), (5,PrintTok), (5,InputTok)],

@@ -206,6 +206,10 @@ evalBuiltin b = case b of
         _ -> typeMismatch
       )
     SqrBI -> liftFVBuiltin1 sqrt
+    StrBI -> (\xs -> case xs of
+        [FloatVal fv] -> return (StringVal (showVal (FloatVal fv)))
+        _ -> typeMismatch
+      )
     TabBI -> (\xs -> case xs of
         [FloatVal fv] ->
             let destCol = floor fv in
@@ -220,6 +224,10 @@ evalBuiltin b = case b of
         _ -> typeMismatch
       )
     TanBI -> liftFVBuiltin1 tan
+    ValBI -> (\xs -> case xs of
+        [StringVal sv] -> return (FloatVal (maybe 0 id (readFloat sv)))
+        _              -> typeMismatch
+      )
 
 -- Interpret a tagged statement.
 -- Sets the line number in the state, then passes the statement on to interpS.
@@ -416,10 +424,12 @@ checkArrInds inds = do
     let is = map (round . unFV) inds -- round dimensions as per standard
     return is
 
--- If Float is a round number, print it as an Int.
-printVal :: Val -> Basic o ()
-printVal (FloatVal v) =
+-- If Float is a round number, show it as an Int.
+showVal :: Val -> String
+showVal (FloatVal v) =
     let i = floor v :: Integer
-        s = if fromInteger i == v then show i else show v
-    in printString (" "++s++" ")
-printVal (StringVal s) = printString s
+     in if fromInteger i == v then show i else show v
+showVal (StringVal s) = s
+
+printVal :: Val -> Basic o ()
+printVal v = printString (showVal v)

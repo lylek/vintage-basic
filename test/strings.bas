@@ -6,4 +6,7 @@
 60 ?"MID$(A$,N)=";MID$(A$,N)
 70 ?"MID$(A$,N,3)=";MID$(A$,N,3)
 80 ?"RIGHT$(A$,N)=";RIGHT$(A$,N)
-90 ?"SPC(N)='";SPC(N);"'"
+90 ?"LEN(A$)=";LEN(A$)
+100 ?"VAL(A$)=";VAL(A$)
+110 ?"STR$(N)=";STR$(N)
+120 ?"SPC(N)='";SPC(N);"'"
