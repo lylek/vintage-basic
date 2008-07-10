@@ -42,7 +42,7 @@ data Expr =
 
 data Statement =
     LetS Var Expr
-  | DimS Var
+  | DimS [Var]
   | GotoS Label
   | GosubS Label
   | ReturnS

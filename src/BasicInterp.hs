@@ -249,26 +249,7 @@ interpS _ (RemS s) = return ()
 
 interpS _ EndS = end
 
-interpS _ (DimS arr) = do
-    let (name, xs) =
-            case arr of
-                (FloatVar name xs) -> (name, xs)
-                (IntVar name xs) -> (name, xs)
-                (StringVar name xs) -> (name, xs)
-    inds <- mapM eval xs -- should we allow expressions?
-    is <- checkArrInds inds
-    -- add 1, so that range is from 0 to user-specified bound
-    let bounds = map (1+) is
-    case arr of
-        (FloatVar _ _) -> do
-            dimArray name bounds (defVal :: Float)
-            return ()
-        (IntVar _ _) -> do
-            dimArray name bounds (defVal :: Int)
-            return ()
-        (StringVar _ _) -> do
-            dimArray name bounds (defVal :: String)
-            return ()
+interpS _ (DimS arrs) = mapM_ interpDim arrs
 
 interpS _ (LetS var x) = do
     val <- eval x
@@ -420,6 +401,28 @@ setVal arr val = do
         ((IntVar _ _), FloatVal fv) -> setArr name is (round fv :: Int)
         ((StringVar _ _), StringVal sv) -> setArr name is sv
         (_,_) -> basicError "!TYPE MISMATCH IN ASSIGNMENT"
+
+interpDim :: Var -> Code ()
+interpDim arr = do
+    let (name, xs) =
+            case arr of
+                (FloatVar name xs) -> (name, xs)
+                (IntVar name xs) -> (name, xs)
+                (StringVar name xs) -> (name, xs)
+    inds <- mapM eval xs -- should we allow expressions?
+    is <- checkArrInds inds
+    -- add 1, so that range is from 0 to user-specified bound
+    let bounds = map (1+) is
+    case arr of
+        (FloatVar _ _) -> do
+            dimArray name bounds (defVal :: Float)
+            return ()
+        (IntVar _ _) -> do
+            dimArray name bounds (defVal :: Int)
+            return ()
+        (StringVar _ _) -> do
+            dimArray name bounds (defVal :: String)
+            return ()
 
 checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
 checkArrInds inds = do

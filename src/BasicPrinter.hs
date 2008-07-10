@@ -81,7 +81,7 @@ printStatement (InputS prompt vs) =
     "INPUT " ++ (case prompt of Nothing -> ""; Just ps -> show ps ++ ";")
          ++ (concat $ intersperse "," (map printVar vs))
 printStatement EndS = "END"
-printStatement (DimS arr) = "DIM " ++ printVar arr
+printStatement (DimS arrs) = "DIM " ++ concat (intersperse "," (map printVar arrs))
 printStatement (RemS s) = "REM" ++ s
 
 printStatementList ss = concat $ intersperse ":" (map printTaggedStatement ss)

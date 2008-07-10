@@ -265,8 +265,8 @@ endSP =
 dimSP :: TokParser Statement
 dimSP =
     do tokenP (==DimTok)
-       arr <- arrP
-       return (DimS arr)
+       arrs <- sepBy1 arrP (tokenP (==CommaTok))
+       return (DimS arrs)
 
 randomizeSP :: TokParser Statement
 randomizeSP = do
