@@ -36,6 +36,7 @@ data Expr =
   | NotX Expr
   | BinX BinOp Expr Expr
   | BuiltinX Builtin [Expr]
+  | NextZoneX
   | ParenX Expr
     deriving (Show,Eq)
 

@@ -175,6 +175,8 @@ setArr var indices val = do
 setLineNumber :: Int -> Basic o ()
 setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })
 
+zoneWidth = 14 :: Int
+
 printString :: String -> Basic o ()
 printString s = do
     state <- get

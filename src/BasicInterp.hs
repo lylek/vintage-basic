@@ -110,6 +110,10 @@ eval (BinX op x1 x2) = do
 eval (BuiltinX b xs) = do
     vs <- mapM eval xs
     evalBuiltin b vs
+eval NextZoneX = do
+    curCol <- getOutputColumn
+    let numSpaces = zoneWidth - (curCol `mod` zoneWidth)
+    return $ StringVal $ replicate numSpaces ' '
 eval (ParenX x) = eval x
 
 evalBinOp :: BinOp -> Val -> Val -> Code Val

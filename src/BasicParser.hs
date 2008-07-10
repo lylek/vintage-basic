@@ -228,11 +228,21 @@ printSP =
        (tokenP (==SemiTok) >> return (PrintS xs False))
            <|> return (PrintS xs True)
 
+optionally :: GenParser tok st a -> GenParser tok st (Maybe a)
+optionally p = option Nothing (p >>= return . Just)
+
 printSPExprs :: TokParser [Expr]
 printSPExprs =
     do x <- exprP
-       xs' <- many (try (tokenP (==SemiTok) >> exprP))
+       xs' <- many (try (optionally (tokenP (==SemiTok)) >> printExprP))
        return (x:xs')
+
+printExprP = nextZoneP <|> exprP
+
+nextZoneP :: TokParser Expr
+nextZoneP = do
+    tokenP (==CommaTok)
+    return NextZoneX
 
 inputSP :: TokParser Statement
 inputSP =
