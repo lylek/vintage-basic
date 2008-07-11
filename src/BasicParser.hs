@@ -289,5 +289,14 @@ statementListP :: TokParser [Tagged Statement]
 statementListP = do
     many (tokenP (==ColonTok))
     sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
-    eof <?> "colon or end of line"
-    return sl                    
+    eol <?> ": or end of line"
+    return sl
+
+anyTokenP :: TokParser (Tagged Token)
+anyTokenP = tokenP (const True)
+
+eol :: TokParser ()
+eol = try (do {
+    tok <- anyTokenP;
+    unexpected (printToken (getTaggedVal tok));
+  } <|> return ()) <?> "end of line"
