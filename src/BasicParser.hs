@@ -187,6 +187,24 @@ returnSP =
     do tokenP (==ReturnTok)
        return ReturnS
 
+onGotoSP :: TokParser Statement
+onGotoSP = try $ do
+    tokenP (==OnTok)
+    x <- exprP
+    tokenP (==GoTok)
+    tokenP (==ToTok)
+    ns <- sepBy1 lineNumP (tokenP (==CommaTok))
+    return (OnGotoS x ns)
+
+onGosubSP :: TokParser Statement
+onGosubSP = try $ do
+    tokenP (==OnTok)
+    x <- exprP
+    tokenP (==GoTok)
+    tokenP (==SubTok)
+    ns <- sepBy1 lineNumP (tokenP (==CommaTok))
+    return (OnGosubS x ns)
+
 ifSP :: TokParser Statement
 ifSP =
     do tokenP (==IfTok)
@@ -279,11 +297,12 @@ remSP =
        return (RemS (getRemTokString (getTaggedVal tok)))
 
 statementP :: TokParser (Tagged Statement)
-statementP = do input <- getInput
-                let pos = getPosTag (head input)
-                st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP,
-                    ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, remSP, letSP]
-                return (Tagged pos st)
+statementP = do
+    input <- getInput
+    let pos = getPosTag (head input)
+    st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP, onGotoSP, onGosubSP,
+        ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, remSP, letSP]
+    return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]
 statementListP = do

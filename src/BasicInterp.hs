@@ -271,6 +271,10 @@ interpS jumpTable (GotoS lab) = do
     assert (isJust maybeCode) ("!BAD GOTO TARGET: " ++ show lab)
     fromJust maybeCode >> end
 
+interpS jumpTable (OnGotoS x labs) = interpComputed jumpTable "GOTO" GotoS x labs
+
+interpS jumpTable (OnGosubS x labs) = interpComputed jumpTable "GOSUB" GosubS x labs
+
 interpS jumpTable (IfS x sts) = do
     val <- eval x
     assert (isFloat val) "!TYPE MISMATCH IN IF"
@@ -318,6 +322,17 @@ interpS jumpTable (GosubS lab) =
 interpS _ ReturnS = raiseCC Return
 
 interpS _ RandomizeS = seedRandomFromTime
+
+interpComputed jumpTable desc cons x labs = do
+    v <- eval x
+    assert (isFloat v) ("!TYPE MISMATCH IN ON-" ++ desc)
+    let i = floor (unFV v)
+    if i > 0 && i <= length labs
+        then do
+            let lab = labs !! (i-1)
+            interpS jumpTable (cons lab)
+        else
+            return ()
 
 interpNextVar (FloatVar v []) = raiseCC (Next (Just v))
 interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"

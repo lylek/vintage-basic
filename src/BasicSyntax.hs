@@ -45,6 +45,8 @@ data Statement =
   | DimS [Var]
   | GotoS Label
   | GosubS Label
+  | OnGotoS Expr [Label]
+  | OnGosubS Expr [Label]
   | ReturnS
   | IfS Expr [Tagged Statement]
   | ForS Var Expr Expr Expr
