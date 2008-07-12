@@ -66,6 +66,7 @@ instance BasicType String where
 data BasicState = BasicState {
     lineNumber :: Int, -- for error reporting
     outputColumn :: Int, -- for TAB() function
+    prevRandomVal :: Float,
     randomGen :: StdGen
 }
 
@@ -98,7 +99,7 @@ runBasic m = do
     iat <- new (==) hashString
     sat <- new (==) hashString
     let store = BasicStore ft it st fat iat sat
-    runStateT (runReaderT (runCPST m) store) (BasicState 0 0 (mkStdGen 0))
+    runStateT (runReaderT (runCPST m) store) (BasicState 0 0 0 (mkStdGen 0))
 
 assert cond err = if cond then return () else basicError err
 
@@ -209,12 +210,17 @@ seedRandom i = modify (\state -> state { randomGen = (mkStdGen i) })
 seedRandomFromTime :: Code ()
 seedRandomFromTime = secondsSinceMidnight >>= seedRandom
 
+getPrevRandom :: Code Float
+getPrevRandom = do
+    state <- get
+    return (prevRandomVal state)
+
 getRandom :: Code Float
 getRandom = do
     state <- get
-    let (r, g) = random (randomGen state)
-    put (state { randomGen = g })
-    return r
+    let (rVal, rGen) = random (randomGen state)
+    put (state { prevRandomVal = rVal, randomGen = rGen })
+    return rVal
 
 {-
 -- A sample for testing the monad.

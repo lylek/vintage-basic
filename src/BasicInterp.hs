@@ -197,8 +197,12 @@ evalBuiltin b = case b of
         _ -> typeMismatch
       )
     RndBI -> (\xs -> case xs of
-        [] -> do
-            rv <- getRandom
+        [FloatVal fv] -> do
+            let iv = floor fv
+            if iv < 0
+                then seedRandom iv
+                else return ()
+            rv <- if (iv == 0) then getPrevRandom else getRandom
             return (FloatVal rv)
         _ -> typeMismatch
       )
