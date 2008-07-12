@@ -48,6 +48,9 @@ ignore x = return ()
 
 defBounds = [11] :: [Int] -- default array bounds: one dimension, 0-10
 
+floatToInt :: Float -> Int
+floatToInt = round
+
 instance BasicType Float where
     defVal = 0
     scalarTable = floatTable

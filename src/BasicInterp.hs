@@ -159,7 +159,7 @@ evalBuiltin b = case b of
     AtnBI -> liftFVBuiltin1 atan
     ChrBI -> (\xs -> case xs of
         [FloatVal v] ->
-            let iv = floor v :: Int in
+            let iv = floatToInt v :: Int in
                 if iv < 0 || iv > 255
                 then invalidArgument
                 else return $ StringVal ([toEnum iv])
@@ -167,10 +167,10 @@ evalBuiltin b = case b of
       )
     CosBI -> liftFVBuiltin1 cos
     ExpBI -> liftFVBuiltin1 exp
-    IntBI -> liftFVBuiltin1 (fromInteger . floor)
+    IntBI -> liftFVBuiltin1 (fromIntegral . floatToInt)
     LeftBI -> (\xs -> case xs of
         [StringVal sv, FloatVal fv] ->
-            let iv = floor fv in
+            let iv = floatToInt fv in
                 return (StringVal (take iv sv))
         _ -> typeMismatch
       )
@@ -181,24 +181,24 @@ evalBuiltin b = case b of
     LogBI -> liftFVBuiltin1 log
     MidBI -> (\xs -> case xs of
         [StringVal sv, FloatVal fv] ->
-            let iv = floor fv in
+            let iv = floatToInt fv in
                 return (StringVal (drop (iv-1) sv))
         [StringVal sv, FloatVal fv1, FloatVal fv2] ->
-            let iv1 = floor fv1
-                iv2 = floor fv2
+            let iv1 = floatToInt fv1
+                iv2 = floatToInt fv2
             in
                 return (StringVal (take iv2 (drop (iv1-1) sv)))
         _ -> typeMismatch
       )
     RightBI -> (\xs -> case xs of
         [StringVal sv, FloatVal fv] ->
-            let iv = floor fv in
+            let iv = floatToInt fv in
                 return (StringVal (drop (length sv - iv) sv))
         _ -> typeMismatch
       )
     RndBI -> (\xs -> case xs of
         [FloatVal fv] -> do
-            let iv = floor fv
+            let iv = floatToInt fv
             if iv < 0
                 then seedRandom iv
                 else return ()
@@ -209,7 +209,7 @@ evalBuiltin b = case b of
     SgnBI -> liftFVBuiltin1 (\v -> if v < 0 then -1 else if v > 0 then 1 else 0)
     SpcBI -> (\xs -> case xs of
         [FloatVal fv] ->
-            let iv = floor fv in
+            let iv = floatToInt fv in
                 return (StringVal (replicate iv ' '))
         _ -> typeMismatch
       )
@@ -220,7 +220,7 @@ evalBuiltin b = case b of
       )
     TabBI -> (\xs -> case xs of
         [FloatVal fv] ->
-            let destCol = floor fv in
+            let destCol = floatToInt fv in
                 if (destCol < 0)
                   then invalidArgument
                   else do
@@ -330,7 +330,7 @@ interpS _ RandomizeS = seedRandomFromTime
 interpComputed jumpTable desc cons x labs = do
     v <- eval x
     assert (isFloat v) ("!TYPE MISMATCH IN ON-" ++ desc)
-    let i = floor (unFV v)
+    let i = floatToInt (unFV v)
     if i > 0 && i <= length labs
         then do
             let lab = labs !! (i-1)
@@ -403,7 +403,7 @@ getVal arr = do
 setVal :: Var -> Val -> Code ()
 setVal (FloatVar name []) (FloatVal val) = setVar name val
 setVal (FloatVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
-setVal (IntVar name []) (FloatVal val) = setVar name (round val :: Int)
+setVal (IntVar name []) (FloatVal val) = setVar name (floatToInt val)
 setVal (IntVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
 setVal (StringVar name []) (StringVal val) = setVar name val
 setVal (StringVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
@@ -417,7 +417,7 @@ setVal arr val = do
     is <- checkArrInds inds
     case (arr, val) of
         ((FloatVar _ _), FloatVal fv) -> setArr name is fv
-        ((IntVar _ _), FloatVal fv) -> setArr name is (round fv :: Int)
+        ((IntVar _ _), FloatVal fv) -> setArr name is (floatToInt fv :: Int)
         ((StringVar _ _), StringVal sv) -> setArr name is sv
         (_,_) -> basicError "!TYPE MISMATCH IN ASSIGNMENT"
 
@@ -447,14 +447,14 @@ checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
 checkArrInds inds = do
     assert (and (map isFloat inds)) "!ARRAY DIMS MUST BE NUMBERS"
     assert (and (map (\(FloatVal ind) -> ind>=0) inds)) ("!NEGATIVE ARRAY DIMS")
-    let is = map (round . unFV) inds -- round dimensions as per standard
+    let is = map (floatToInt . unFV) inds -- round dimensions as per standard
     return is
 
 -- If Float is a round number, show it as an Int.
 showVal :: Val -> String
 showVal (FloatVal v) =
-    let i = floor v :: Integer
-     in " " ++ (if fromInteger i == v then show i else show v) ++ " "
+    let i = floatToInt v
+     in " " ++ (if fromIntegral i == v then show i else show v) ++ " "
 showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()
