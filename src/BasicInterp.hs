@@ -454,7 +454,7 @@ checkArrInds inds = do
 showVal :: Val -> String
 showVal (FloatVal v) =
     let i = floor v :: Integer
-     in if fromInteger i == v then show i else show v
+     in " " ++ (if fromInteger i == v then show i else show v) ++ " "
 showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()
