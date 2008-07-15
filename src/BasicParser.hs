@@ -291,6 +291,23 @@ randomizeSP = do
     tok <- tokenP (==RandomizeTok)
     return RandomizeS
 
+readSP :: TokParser Statement
+readSP = do
+    tokenP (==ReadTok)
+    vars <- sepBy1 varP (tokenP (==CommaTok))
+    return (ReadS vars)
+
+restoreSP :: TokParser Statement
+restoreSP = do
+    tokenP (==RestoreTok)
+    maybeLineNum <- optionally lineNumP
+    return (RestoreS maybeLineNum)
+
+dataSP :: TokParser Statement
+dataSP = do
+    (Tagged _ (DataTok s)) <- tokenP isDataTok
+    return (DataS s)
+
 remSP :: TokParser Statement
 remSP =
     do tok <- tokenP isRemTok
@@ -301,7 +318,8 @@ statementP = do
     input <- getInput
     let pos = getPosTag (head input)
     st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP, onGotoSP, onGosubSP,
-        ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, remSP, letSP]
+        ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, readSP, restoreSP, dataSP, remSP,
+        letSP]
     return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]

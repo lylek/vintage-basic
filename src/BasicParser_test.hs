@@ -70,3 +70,19 @@ test_parse_on_goto = parserTest
 test_parse_on_gosub = parserTest
     "ON3GOSUB10,20,40"
     [(1,OnGosubS (LitX (FloatLit 3)) [10,20,40])]
+
+test_parse_data = parserTest
+    "DATA4,5,\"THIS,WORKS\""
+    [(1,DataS "4,5,\"THIS,WORKS\"")]
+
+test_parse_read = parserTest
+    "READA$(5),B"
+    [(1,ReadS [(StringVar "A" [(LitX (FloatLit 5))]), (FloatVar "B" [])])]
+
+test_parse_restore = parserTest
+    "RESTORE"
+    [(1,RestoreS Nothing)]
+
+test_parse_restore_with_line_number = parserTest
+    "RESTORE20"
+    [(1,RestoreS (Just 20))]

@@ -18,7 +18,20 @@ import BasicResult
 import BasicRuntimeParser(dataValsP,readFloat)
 import BasicSyntax
 
--- This 'program' function interprets the list of lines.
+data JumpTableEntry = JumpTableEntry {
+    jtLabel :: Label,
+    jtProgram :: Program,
+    jtData :: [String]
+}
+
+type JumpTable = [JumpTableEntry]
+
+programLookup :: JumpTable -> Label -> (Maybe Program)
+programLookup jt lab = lookup lab [(l, p) | (JumpTableEntry l p d) <- jt]
+
+dataLookup :: JumpTable -> Label -> (Maybe [String])
+dataLookup jt lab = lookup lab [(l, d) | (JumpTableEntry l p d) <- jt]
+
 -- Note that jumpTable and interpLine are mutually recursive.
 -- The jumpTable contains interpreted code, which in turn calls
 -- the jumpTable to look up code.  Since the jumpTable is a single
@@ -27,13 +40,20 @@ import BasicSyntax
 -- is following an IF statement.)
 interpLines :: [Line] -> Program
 interpLines lines =
-    let interpLine (Line lab stmts) =
-            (lab, mapM_ (interpTS jumpTable) stmts)
-        makeTableEntry accumCode (lab, codeSeg) =
+    let interpLine line@(Line lab stmts) =
+            (lab, mapM_ (interpTS jumpTable) stmts, dataFromLine line)
+        makeTableEntry (accumCode, accumData) (lab, codeSeg, lineData) =
             let accumCode' = codeSeg >> accumCode
-                in (accumCode', (lab, accumCode'))
-        jumpTable = snd $ mapAccumR makeTableEntry done $ map interpLine lines
-    in snd $ head jumpTable
+                accumData' = lineData ++ accumData
+                in ((accumCode', accumData'), JumpTableEntry lab accumCode' accumData')
+        jumpTable = snd $ mapAccumR makeTableEntry (done, []) $ map interpLine lines
+    in do
+        case jumpTable of
+            ((JumpTableEntry _ prog dat) : _) -> do
+                seedRandomFromTime
+                setDataStrings dat
+                prog
+            [] -> done
 
 -- Expression evaluation
 
@@ -239,7 +259,7 @@ evalBuiltin b = case b of
 
 -- Interpret a tagged statement.
 -- Sets the line number in the state, then passes the statement on to interpS.
-interpTS :: [(Label, Program)] -> Tagged Statement -> Code ()
+interpTS :: JumpTable -> Tagged Statement -> Code ()
 interpTS jumpTable (Tagged pos statement) = do
     setLineNumber (sourceLine pos)
     interpS jumpTable statement
@@ -247,7 +267,7 @@ interpTS jumpTable (Tagged pos statement) = do
 -- Interpret a single statement.
 -- In the type of interpS, the first () signifies what is passed to a
 -- resumed trap.  The second one represents what is returned by interpS.
-interpS :: [(Label, Program)] -> Statement -> Code ()
+interpS :: JumpTable -> Statement -> Code ()
 
 interpS _ (RemS s) = return ()
 
@@ -271,7 +291,7 @@ interpS _ (InputS mPrompt vars) = do
     inputVars vars
 
 interpS jumpTable (GotoS lab) = do
-    let maybeCode = lookup lab jumpTable
+    let maybeCode = programLookup jumpTable lab
     assert (isJust maybeCode) ("!BAD GOTO TARGET: " ++ show lab)
     fromJust maybeCode >> end
 
@@ -317,7 +337,7 @@ interpS _ (NextS Nothing) = raiseCC (Next Nothing)
 interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 
 interpS jumpTable (GosubS lab) =
-    do let maybeCode = lookup lab jumpTable
+    do let maybeCode = programLookup jumpTable lab
        assert (isJust maybeCode) ("!BAD GOSUB TARGET: " ++ show lab)
        let f x passOn resume continue =
                if isReturn x then continue False else passOn True
@@ -326,6 +346,19 @@ interpS jumpTable (GosubS lab) =
 interpS _ ReturnS = raiseCC Return
 
 interpS _ RandomizeS = seedRandomFromTime
+
+interpS jumpTable (RestoreS maybeLab) = do
+   case maybeLab of
+       (Just lab) -> case dataLookup jumpTable lab of
+           (Just ds) -> setDataStrings ds
+           Nothing -> basicError ("!BAD RESTORE TARGET: " ++ show lab)
+       Nothing -> if null jumpTable
+           then return ()
+           else setDataStrings (jtData (head jumpTable))
+
+interpS _ (ReadS vars) = mapM_ interpRead vars
+
+interpS _ (DataS _) = return ()
 
 interpComputed jumpTable desc cons x labs = do
     v <- eval x
@@ -370,6 +403,13 @@ checkInput (FloatVar _ _) s =
     case readFloat s of
         (Just v) -> Just (FloatVal v)
         _ -> Nothing
+
+interpRead :: Var -> Code ()
+interpRead var = do
+    s <- readData
+    case checkInput var s of
+        Nothing -> basicError "!TYPE MISMATCH IN READ"
+        (Just val) -> setVal var val
 
 getVal :: Var -> Code Val
 getVal (FloatVar name []) = do
@@ -459,3 +499,12 @@ showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()
 printVal v = printString (showVal v)
+
+dataFromLine :: Line -> [String]
+dataFromLine (Line lab stmts) = concat (map (dataFromStatement . getTaggedVal) stmts)
+
+dataFromStatement :: Statement -> [String]
+dataFromStatement (DataS s) =
+    let (Right ss) = parse dataValsP "" s
+    in ss
+dataFromStatement _ = []

@@ -55,6 +55,9 @@ data Statement =
   | InputS (Maybe String) [Var]
   | EndS
   | RandomizeS
+  | ReadS [Var]
+  | RestoreS (Maybe Label)
+  | DataS String
   | RemS String
     deriving (Show,Eq)
 

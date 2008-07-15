@@ -70,7 +70,8 @@ data BasicState = BasicState {
     lineNumber :: Int, -- for error reporting
     outputColumn :: Int, -- for TAB() function
     prevRandomVal :: Float,
-    randomGen :: StdGen
+    randomGen :: StdGen,
+    dataStrings :: [String]
 }
 
 type BasicRT = ReaderT BasicStore (StateT BasicState IO)
@@ -102,7 +103,7 @@ runBasic m = do
     iat <- new (==) hashString
     sat <- new (==) hashString
     let store = BasicStore ft it st fat iat sat
-    runStateT (runReaderT (runCPST m) store) (BasicState 0 0 0 (mkStdGen 0))
+    runStateT (runReaderT (runCPST m) store) (BasicState 0 0 0 (mkStdGen 0) [])
 
 assert cond err = if cond then return () else basicError err
 
@@ -224,6 +225,17 @@ getRandom = do
     let (rVal, rGen) = random (randomGen state)
     put (state { prevRandomVal = rVal, randomGen = rGen })
     return rVal
+
+setDataStrings :: [String] -> Code ()
+setDataStrings ds = modify (\store -> store { dataStrings = ds })
+
+readData :: Code String
+readData = do
+    state <- get
+    let ds = dataStrings state
+    assert (not (null ds)) "!OUT OF DATA"
+    put (state { dataStrings = tail ds })
+    return (head ds)
 
 {-
 -- A sample for testing the monad.
