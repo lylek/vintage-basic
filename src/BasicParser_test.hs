@@ -63,6 +63,14 @@ test_parse_multiple_dims = parserTest
     "DIMA$(5),G(14,20)"
     [(1,DimS [(StringVar "A" [(LitX (FloatLit 5))]), (FloatVar "G" [(LitX (FloatLit 14)), (LitX (FloatLit 20))])])]
 
+test_parse_goto = parserTest
+    "GOTO20"
+    [(1,GotoS 20)]
+
+test_parse_gosub = parserTest
+    "GOSUB20"
+    [(1,GosubS 20)]
+
 test_parse_on_goto = parserTest
     "ON3GOTO10,20,40"
     [(1,OnGotoS (LitX (FloatLit 3)) [10,20,40])]

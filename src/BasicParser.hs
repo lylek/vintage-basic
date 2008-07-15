@@ -169,18 +169,16 @@ letSP =
        return (LetS v x)
 
 gotoSP :: TokParser Statement
-gotoSP =
-    do tokenP (==GoTok)
-       tokenP (==ToTok)
-       n <- lineNumP
-       return (GotoS n)
+gotoSP = do
+    try (tokenP (==GoTok) >> tokenP (==ToTok))
+    n <- lineNumP
+    return (GotoS n)
 
 gosubSP :: TokParser Statement
-gosubSP =
-    do tokenP (==GoTok)
-       tokenP (==SubTok)
-       n <- lineNumP
-       return (GosubS n)
+gosubSP = do
+    try (tokenP (==GoTok) >> tokenP (==SubTok))
+    n <- lineNumP
+    return (GosubS n)
 
 returnSP :: TokParser Statement
 returnSP =
