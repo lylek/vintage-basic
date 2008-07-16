@@ -94,3 +94,11 @@ test_parse_restore = parserTest
 test_parse_restore_with_line_number = parserTest
     "RESTORE20"
     [(1,RestoreS (Just 20))]
+
+test_parse_def_fn = parserTest
+    "DEFFNAN1$(B,CD$)=4+B"
+    [(1,DefFnS (StringVar "AN1" []) [(FloatVar "B" []), (StringVar "CD" [])] (BinX AddOp (LitX (FloatLit 4)) (VarX (FloatVar "B" []))))]
+
+test_parse_fn = parserTest
+    "?FNAN2$(1,\"X\")"
+    [(1,PrintS [FnX (StringVar "AN2" []) [(LitX (FloatLit 1)), (LitX (StringLit "X"))]] True)]

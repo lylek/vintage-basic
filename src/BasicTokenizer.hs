@@ -27,7 +27,7 @@ data Token = StringTok { getStringTokString :: String } | RemTok { getRemTokStri
            | LetTok | DimTok | OnTok | GoTok | SubTok | ReturnTok
            | IfTok | ThenTok | ForTok | ToTok | StepTok | NextTok
            | PrintTok | InputTok | RandomizeTok | ReadTok | RestoreTok
-           | FnTok | EndTok
+           | DefTok | FnTok | EndTok
            | SpaceTok | DotTok | CharTok { getCharTokChar :: Char }
              deriving (Eq,Show)
 
@@ -123,6 +123,7 @@ strToTokAssoc =
      ("RANDOMIZE", RandomizeTok),
      ("READ",      ReadTok),
      ("RESTORE",   RestoreTok),
+     ("DEF",       DefTok),
      ("FN",        FnTok),
      ("END",       EndTok)
   ] ++ [(s, BuiltinTok b) | (b,s) <- builtinToStrAssoc]

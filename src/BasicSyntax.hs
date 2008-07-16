@@ -32,6 +32,7 @@ data BinOp =
 data Expr =
     LitX Literal
   | VarX Var
+  | FnX Var [Expr]
   | MinusX Expr
   | NotX Expr
   | BinX BinOp Expr Expr
@@ -58,6 +59,7 @@ data Statement =
   | ReadS [Var]
   | RestoreS (Maybe Label)
   | DataS String
+  | DefFnS Var [Var] Expr
   | RemS String
     deriving (Show,Eq)
 

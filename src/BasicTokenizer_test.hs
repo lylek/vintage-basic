@@ -11,7 +11,7 @@ test_taggedTokensP = TestCase $ do
                 ",:;()$%=<><=>=><+-*/^.?",
                 "ABSASCCHR$COSEXPINTLEFT$LENLOGMID$RIGHT$RNDSGNSPCSQRSTR$TABTANVAL",
                 "ANDORNOTLETDIMONGOSUBRETURNIFTHENFORTOSTEPNEXTPRINTINPUT",
-                "RANDOMIZEREADRESTOREFNEND",
+                "RANDOMIZEREADRESTOREDEFFNEND",
                 "\"hello\"REMGOFORTH\"ANDREAD\"",
                 "XDATATODATA"
                ]
@@ -30,7 +30,8 @@ test_taggedTokensP = TestCase $ do
                         [(3,AndTok), (2,OrTok), (3,NotTok), (3,LetTok), (3,DimTok), (2,OnTok),
                          (2,GoTok), (3,SubTok), (6,ReturnTok), (2,IfTok), (4,ThenTok), (3,ForTok),
                          (2,ToTok), (4,StepTok), (4,NextTok), (5,PrintTok), (5,InputTok)],
-                        [(9,RandomizeTok), (4,ReadTok), (7,RestoreTok), (2,FnTok), (3,EndTok)],
+                        [(9,RandomizeTok), (4,ReadTok), (7,RestoreTok), (3,DefTok), (2,FnTok),
+                         (3,EndTok)],
                         [(7,StringTok "hello"), (19,RemTok "GOFORTH\"ANDREAD\"")],
                         [(1,CharTok 'X'), (10,DataTok "TODATA")]
                        ]

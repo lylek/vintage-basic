@@ -57,9 +57,6 @@ interpLines lines =
 
 -- Expression evaluation
 
-data Val = FloatVal Float | StringVal String
-    deriving (Eq,Show,Ord)
-
 boolToVal :: Bool -> Val
 boolToVal t = if t then FloatVal (-1) else FloatVal 0
 
@@ -117,6 +114,10 @@ eval :: Expr -> Code Val
 eval (LitX (FloatLit v)) = return (FloatVal v)
 eval (LitX (StringLit v)) = return (StringVal v)
 eval (VarX var) = getVal var
+eval (FnX var xs) = do
+    fn <- getFn var
+    vals <- mapM eval xs
+    fn vals
 eval (MinusX x) = do
     val <- eval x
     liftFVOp1 negate val
@@ -359,6 +360,36 @@ interpS jumpTable (RestoreS maybeLab) = do
 interpS _ (ReadS vars) = mapM_ interpRead vars
 
 interpS _ (DataS _) = return ()
+
+interpS _ (DefFnS var params expr) = setFn var $ \vals -> do
+    sequence_ $ zipWith checkVarTypeAgainstVal params vals
+    stashedVals <- mapM getScalarVar params
+    sequence_ $ zipWith setScalarVar params vals
+    result <- eval expr
+    sequence_ $ zipWith setScalarVar params stashedVals
+    return result
+
+checkVarTypeAgainstVal :: Var -> Val -> Code ()
+checkVarTypeAgainstVal (FloatVar  _ _) (FloatVal  _) = return ()
+checkVarTypeAgainstVal (IntVar    _ _) (FloatVal  _) = return ()
+checkVarTypeAgainstVal (StringVar _ _) (StringVal _) = return ()
+checkVarTypeAgainstVal _               _             = basicError "!TYPE MISMATCH IN FN"
+
+getScalarVar :: Var -> Code Val
+getScalarVar (FloatVar var []) = do
+    val <- getVar var
+    return (FloatVal val)
+getScalarVar (IntVar var []) = do
+    val <- getVar var :: Code Int
+    return (FloatVal (fromIntegral val))
+getScalarVar (StringVar var []) = do
+    val <- getVar var
+    return (StringVal val)
+
+setScalarVar :: Var -> Val -> Code ()
+setScalarVar (FloatVar var []) val = setVar var (unFV val)
+setScalarVar (IntVar var []) val = setVar var (floatToInt (unFV val))
+setScalarVar (StringVar var []) val = setVar var (unSV val)
 
 interpComputed jumpTable desc cons x labs = do
     v <- eval x

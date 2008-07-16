@@ -21,10 +21,15 @@ import Data.Maybe
 import System.IO
 import System.Random
 import System.Time
+import BasicPrinter(printVar)
 import BasicResult
+import BasicSyntax(Var)
 import CPST
 import CPSTInstances
 import DurableTraps
+
+data Val = FloatVal Float | StringVal String
+    deriving (Eq,Show,Ord)
 
 data BasicStore = BasicStore {
     floatTable :: HashTable String (IORef Float),
@@ -33,7 +38,8 @@ data BasicStore = BasicStore {
     -- In the array tables, the [Int] lists the bound of each dimension
     floatArrTable :: HashTable String ([Int], IOArray Int Float),
     intArrTable :: HashTable String ([Int], IOArray Int Int),
-    stringArrTable :: HashTable String ([Int], IOArray Int String)
+    stringArrTable :: HashTable String ([Int], IOArray Int String),
+    fnTable :: HashTable Var (IORef ([Val] -> Code Val))
 }
 
 class BasicType a where
@@ -102,7 +108,8 @@ runBasic m = do
     fat <- new (==) hashString
     iat <- new (==) hashString
     sat <- new (==) hashString
-    let store = BasicStore ft it st fat iat sat
+    fnt <- new (==) (hashString . printVar)
+    let store = BasicStore ft it st fat iat sat fnt
     runStateT (runReaderT (runCPST m) store) (BasicState 0 0 0 (mkStdGen 0) [])
 
 assert cond err = if cond then return () else basicError err
@@ -176,6 +183,24 @@ setArr :: BasicType a => String -> [Int] -> a -> Code ()
 setArr var indices val = do
     (bounds, arr) <- lookupArray var indices
     liftIO $ writeArray arr (arrIndex bounds indices) val
+
+getFn :: Var -> Code ([Val] -> Code Val)
+getFn v = do
+    store <- ask
+    maybeVarRef <- liftIO $ lookup (fnTable store) v
+    assert (isJust maybeVarRef) ("!UNDEFINED FUNCTION " ++ printVar v)
+    liftIO $ readIORef (fromJust maybeVarRef)
+
+setFn :: Var -> ([Val] -> Code Val) -> Code ()
+setFn var fn = do
+    store <- ask
+    liftIO $ do
+        maybeVarRef <- lookup (fnTable store) var
+        case maybeVarRef of
+            Nothing -> do
+                ref <- newIORef fn
+                insert (fnTable store) var ref
+            (Just varRef) -> writeIORef varRef fn
 
 setLineNumber :: Int -> Basic o ()
 setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })

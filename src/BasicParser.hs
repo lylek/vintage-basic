@@ -125,6 +125,13 @@ argsP =
        tokenP (==RParenTok)
        return xs
 
+fnXP :: TokParser Expr
+fnXP = do
+    tokenP (==FnTok)
+    var <- simpleVarP
+    args <- argsP
+    return (FnX var args)
+
 parenXP :: TokParser Expr
 parenXP =
     do tokenP (==LParenTok)
@@ -133,7 +140,7 @@ parenXP =
        return (ParenX x)
 
 primXP :: TokParser Expr
-primXP = parenXP <|> litXP <|> builtinXP <|> varXP
+primXP = parenXP <|> litXP <|> builtinXP <|> fnXP <|> varXP
 
 opTable :: OperatorTable (Tagged Token) () Expr
 opTable =
@@ -306,6 +313,18 @@ dataSP = do
     (Tagged _ (DataTok s)) <- tokenP isDataTok
     return (DataS s)
 
+defFnSP :: TokParser Statement
+defFnSP = do
+    tokenP (==DefTok)
+    tokenP (==FnTok)
+    name <- simpleVarP
+    tokenP (==LParenTok)
+    params <- sepBy1 simpleVarP (tokenP (==CommaTok))
+    tokenP (==RParenTok)
+    tokenP (==EqTok)
+    expr <- exprP
+    return (DefFnS name params expr)
+
 remSP :: TokParser Statement
 remSP =
     do tok <- tokenP isRemTok
@@ -317,7 +336,7 @@ statementP = do
     let pos = getPosTag (head input)
     st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP, onGotoSP, onGosubSP,
         ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, readSP, restoreSP, dataSP, remSP,
-        letSP]
+        defFnSP, letSP]
     return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]
