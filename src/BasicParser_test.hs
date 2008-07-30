@@ -53,15 +53,15 @@ test_parse_print_with_comma_separated_parts = parserTest
  
 test_parse_let = parserTest
     "LETA=1"
-    [(1,LetS (FloatVar "A" []) (LitX (FloatLit 1.0)))]
+    [(1,LetS (ScalarVar (VarName FloatType "A")) (LitX (FloatLit 1.0)))]
  
 test_parse_let_wo_keyword = parserTest
     "A=1"
-    [(1,LetS (FloatVar "A" []) (LitX (FloatLit 1.0)))]
+    [(1,LetS (ScalarVar (VarName FloatType "A")) (LitX (FloatLit 1.0)))]
 
 test_parse_multiple_dims = parserTest
     "DIMA$(5),G(14,20)"
-    [(1,DimS [(StringVar "A" [(LitX (FloatLit 5))]), (FloatVar "G" [(LitX (FloatLit 14)), (LitX (FloatLit 20))])])]
+    [(1,DimS [(VarName StringType "A", [(LitX (FloatLit 5))]), (VarName FloatType "G", [(LitX (FloatLit 14)), (LitX (FloatLit 20))])])]
 
 test_parse_goto = parserTest
     "GOTO20"
@@ -85,7 +85,7 @@ test_parse_data = parserTest
 
 test_parse_read = parserTest
     "READA$(5),B"
-    [(1,ReadS [(StringVar "A" [(LitX (FloatLit 5))]), (FloatVar "B" [])])]
+    [(1,ReadS [ArrVar (VarName StringType "A") [(LitX (FloatLit 5))], ScalarVar (VarName FloatType "B")])]
 
 test_parse_restore = parserTest
     "RESTORE"
@@ -97,8 +97,8 @@ test_parse_restore_with_line_number = parserTest
 
 test_parse_def_fn = parserTest
     "DEFFNAN1$(B,CD$)=4+B"
-    [(1,DefFnS (StringVar "AN1" []) [(FloatVar "B" []), (StringVar "CD" [])] (BinX AddOp (LitX (FloatLit 4)) (VarX (FloatVar "B" []))))]
+    [(1,DefFnS (VarName StringType "AN1") [(VarName FloatType "B"), (VarName StringType "CD")] (BinX AddOp (LitX (FloatLit 4)) (VarX (ScalarVar (VarName FloatType "B")))))]
 
 test_parse_fn = parserTest
     "?FNAN2$(1,\"X\")"
-    [(1,PrintS [FnX (StringVar "AN2" []) [(LitX (FloatLit 1)), (LitX (StringLit "X"))]] True)]
+    [(1,PrintS [FnX (VarName StringType "AN2") [(LitX (FloatLit 1)), (LitX (StringLit "X"))]] True)]

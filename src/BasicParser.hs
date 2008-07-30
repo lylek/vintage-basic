@@ -64,39 +64,40 @@ varBaseP = do ls <- many1 (tokenP (charTokTest isAlpha))
               return (taggedCharToksToString (take varSignifLetters ls
                       ++ take varSignifDigits ds))
 
-floatVarP :: TokParser Var
-floatVarP = do name <- varBaseP
-               return (FloatVar name [])
+floatVarNameP :: TokParser VarName
+floatVarNameP = do
+    name <- varBaseP
+    return (VarName FloatType name)
 
-intVarP :: TokParser Var
-intVarP = do name <- varBaseP
-             tokenP (==PercentTok)
-             return (IntVar name [])
+intVarNameP :: TokParser VarName
+intVarNameP = do
+    name <- varBaseP
+    tokenP (==PercentTok)
+    return (VarName IntType name)
 
-stringVarP :: TokParser Var
-stringVarP = do name <- varBaseP
-                tokenP (==DollarTok)
-                return (StringVar name [])
+stringVarNameP :: TokParser VarName
+stringVarNameP = do
+    name <- varBaseP
+    tokenP (==DollarTok)
+    return (VarName StringType name)
 
 -- Look for string and int vars first because of $ and % suffixes.
-simpleVarP :: TokParser Var
-simpleVarP = do
-    v <- try stringVarP <|> try intVarP <|> floatVarP
+varNameP :: TokParser VarName
+varNameP = do
+    vn <- try stringVarNameP <|> try intVarNameP <|> floatVarNameP
     skipSpace
-    return v
+    return vn
 
-arrP :: TokParser Var
-arrP =
-    do v <- simpleVarP
-       xs <- argsP
-       skipSpace
-       return (case v
-                 of FloatVar name [] -> FloatVar name xs
-                    IntVar name [] -> IntVar name xs
-                    StringVar name [] -> StringVar name xs)
+scalarVarP = do
+    vn <- varNameP
+    return (ScalarVar vn)
 
-varP :: TokParser Var
-varP = try arrP <|> simpleVarP
+arrVarP = do
+    vn <- varNameP
+    xs <- argsP
+    return (ArrVar vn xs)
+
+varP = try arrVarP <|> scalarVarP
 
 -- BUILTINS
 
@@ -128,9 +129,9 @@ argsP =
 fnXP :: TokParser Expr
 fnXP = do
     tokenP (==FnTok)
-    var <- simpleVarP
+    vn <- varNameP
     args <- argsP
-    return (FnX var args)
+    return (FnX vn args)
 
 parenXP :: TokParser Expr
 parenXP =
@@ -168,12 +169,12 @@ exprP = buildExpressionParser opTable primXP
 -- STATEMENTS
 
 letSP :: TokParser Statement
-letSP =
-    do skip0or1 (tokenP (==LetTok))
-       v <- varP
-       tokenP (==EqTok)
-       x <- exprP
-       return (LetS v x)
+letSP = do
+    skip0or1 (tokenP (==LetTok))
+    v <- varP
+    tokenP (==EqTok)
+    x <- exprP
+    return (LetS v x)
 
 gotoSP :: TokParser Statement
 gotoSP = do
@@ -225,23 +226,23 @@ ifSPGoto =
        return [Tagged pos (GotoS n)]
 
 forSP :: TokParser Statement
-forSP =
-    do tokenP (==ForTok)
-       v <- simpleVarP
-       tokenP (==EqTok)
-       x1 <- exprP
-       tokenP (==ToTok)
-       x2 <- exprP
-       x3 <- option (LitX (FloatLit 1)) (tokenP (==StepTok) >> exprP)
-       return (ForS v x1 x2 x3)
+forSP = do
+    tokenP (==ForTok)
+    vn <- varNameP
+    tokenP (==EqTok)
+    x1 <- exprP
+    tokenP (==ToTok)
+    x2 <- exprP
+    x3 <- option (LitX (FloatLit 1)) (tokenP (==StepTok) >> exprP)
+    return (ForS vn x1 x2 x3)
 
 -- handles a NEXT and an optional variable list
 nextSP :: TokParser Statement
 nextSP = do
     tokenP (==NextTok)
-    vs <- sepBy simpleVarP (tokenP (==CommaTok))
-    if length vs > 0
-        then return (NextS (Just vs))
+    vns <- sepBy varNameP (tokenP (==CommaTok))
+    if length vns > 0
+        then return (NextS (Just vns))
         else return (NextS Nothing)
 
 printSP :: TokParser Statement
@@ -285,11 +286,18 @@ endSP =
     do tokenP (==EndTok)
        return EndS
 
+arrDeclP :: TokParser (VarName, [Expr])
+arrDeclP = do
+    vn <- varNameP
+    xs <- argsP
+    skipSpace
+    return (vn, xs)
+
 dimSP :: TokParser Statement
-dimSP =
-    do tokenP (==DimTok)
-       arrs <- sepBy1 arrP (tokenP (==CommaTok))
-       return (DimS arrs)
+dimSP = do
+   tokenP (==DimTok)
+   arrDecls <- sepBy1 arrDeclP (tokenP (==CommaTok))
+   return (DimS arrDecls)
 
 randomizeSP :: TokParser Statement
 randomizeSP = do
@@ -299,8 +307,8 @@ randomizeSP = do
 readSP :: TokParser Statement
 readSP = do
     tokenP (==ReadTok)
-    vars <- sepBy1 varP (tokenP (==CommaTok))
-    return (ReadS vars)
+    vs <- sepBy1 varP (tokenP (==CommaTok))
+    return (ReadS vs)
 
 restoreSP :: TokParser Statement
 restoreSP = do
@@ -317,9 +325,9 @@ defFnSP :: TokParser Statement
 defFnSP = do
     tokenP (==DefTok)
     tokenP (==FnTok)
-    name <- simpleVarP
+    name <- varNameP
     tokenP (==LParenTok)
-    params <- sepBy1 simpleVarP (tokenP (==CommaTok))
+    params <- sepBy1 varNameP (tokenP (==CommaTok))
     tokenP (==RParenTok)
     tokenP (==EqTok)
     expr <- exprP

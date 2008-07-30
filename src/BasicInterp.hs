@@ -60,17 +60,14 @@ interpLines lines =
 boolToVal :: Bool -> Val
 boolToVal t = if t then FloatVal (-1) else FloatVal 0
 
-isFloat (FloatVal _) = True
-isFloat _ = False
-
-isString (StringVal _) = True
-isString _ = False
+isFloat  v = typeOf v == FloatType
+isString v = typeOf v == StringType
 
 isNext (Next Nothing) = True
 isNext _ = False
 
-isNextVar s1 (Next (Just s2)) = s1==s2
-isNextVar s1 _ = False
+isNextVar (VarName FloatType v1) (Next (Just v2)) = v1==v2
+isNextVar v1 _ = False
 
 isReturn Return = True
 isReturn _ = False
@@ -113,7 +110,7 @@ divisionByZero = valError "!DIVISION BY ZERO"
 eval :: Expr -> Code Val
 eval (LitX (FloatLit v)) = return (FloatVal v)
 eval (LitX (StringLit v)) = return (StringVal v)
-eval (VarX var) = getVal var
+eval (VarX var) = getVar var
 eval (FnX var xs) = do
     fn <- getFn var
     vals <- mapM eval xs
@@ -278,7 +275,7 @@ interpS _ (DimS arrs) = mapM_ interpDim arrs
 
 interpS _ (LetS var x) = do
     val <- eval x
-    setVal var val
+    setVar var val
 
 interpS _ (PrintS xs nl) = do
     mapM (\x -> eval x >>= printVal) xs
@@ -311,10 +308,10 @@ interpS jumpTable (IfS x sts) = do
 -- This is an intentionally authentic feature.  In fact, were we to try to
 -- test at the initial FOR, we wouldn't know which NEXT to jump to to skip
 -- the loop - it is undecidable.
-interpS _ (ForS (FloatVar control []) x1 x2 x3) = do
+interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
     v1 <- eval x1
     assert (isFloat v1) "!TYPE MISMATCH IN FOR (INIT)"
-    setVar control (unFV v1)
+    setScalarVar control v1
     v2 <- eval x2
     assert (isFloat v2) "!TYPE MISMATCH IN FOR (TO)"
     let lim = unFV v2
@@ -324,9 +321,9 @@ interpS _ (ForS (FloatVar control []) x1 x2 x3) = do
     trap $ \ x passOn resume continue ->
         if isNext x || isNextVar control x
             then do
-                index <- getVar control
+                (FloatVal index) <- getScalarVar control
                 let index' = index+step
-                setVar control index'
+                setScalarVar control (FloatVal index')
                 if (step>=0 && index'<=lim)
                     || (step<0 && index>=lim)
                     then continue True
@@ -361,35 +358,15 @@ interpS _ (ReadS vars) = mapM_ interpRead vars
 
 interpS _ (DataS _) = return ()
 
-interpS _ (DefFnS var params expr) = setFn var $ \vals -> do
-    sequence_ $ zipWith checkVarTypeAgainstVal params vals
+interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
+    assert
+        (and (zipWith (\p v -> typeOf p == typeOf v) params vals))
+        "!TYPE MISMATCH IN FN"
     stashedVals <- mapM getScalarVar params
     sequence_ $ zipWith setScalarVar params vals
     result <- eval expr
     sequence_ $ zipWith setScalarVar params stashedVals
     return result
-
-checkVarTypeAgainstVal :: Var -> Val -> Code ()
-checkVarTypeAgainstVal (FloatVar  _ _) (FloatVal  _) = return ()
-checkVarTypeAgainstVal (IntVar    _ _) (FloatVal  _) = return ()
-checkVarTypeAgainstVal (StringVar _ _) (StringVal _) = return ()
-checkVarTypeAgainstVal _               _             = basicError "!TYPE MISMATCH IN FN"
-
-getScalarVar :: Var -> Code Val
-getScalarVar (FloatVar var []) = do
-    val <- getVar var
-    return (FloatVal val)
-getScalarVar (IntVar var []) = do
-    val <- getVar var :: Code Int
-    return (FloatVal (fromIntegral val))
-getScalarVar (StringVar var []) = do
-    val <- getVar var
-    return (StringVal val)
-
-setScalarVar :: Var -> Val -> Code ()
-setScalarVar (FloatVar var []) val = setVar var (unFV val)
-setScalarVar (IntVar var []) val = setVar var (floatToInt (unFV val))
-setScalarVar (StringVar var []) val = setVar var (unSV val)
 
 interpComputed jumpTable desc cons x labs = do
     v <- eval x
@@ -402,7 +379,7 @@ interpComputed jumpTable desc cons x labs = do
         else
             return ()
 
-interpNextVar (FloatVar v []) = raiseCC (Next (Just v))
+interpNextVar (VarName FloatType v) = raiseCC (Next (Just v))
 interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"
 
 inputVars :: [Var] -> Code ()
@@ -418,7 +395,7 @@ inputVars vars = do
                     inputVars vars
                 else do
                     let vals = map fromJust maybeVals
-                    sequence_ (zipWith setVal vars vals)
+                    sequence_ (zipWith setVar vars vals)
                     case compare (length vars) (length vals) of
                         LT -> printString "!EXTRA INPUT IGNORED\n"
                         GT -> do
@@ -428,10 +405,9 @@ inputVars vars = do
         (Left _) -> error "Mismatched inputbuf in inputVars"
 
 checkInput :: Var -> String -> Maybe Val
-checkInput (StringVar _ _) s = Just (StringVal s)
-checkInput (IntVar var xs) s = checkInput (FloatVar var xs) s
-checkInput (FloatVar _ _) s =
-    case readFloat s of
+checkInput var s = case typeOf var of
+    StringType -> Just (StringVal s)
+    FloatType  -> case readFloat s of
         (Just v) -> Just (FloatVal v)
         _ -> Nothing
 
@@ -440,79 +416,41 @@ interpRead var = do
     s <- readData
     case checkInput var s of
         Nothing -> basicError "!TYPE MISMATCH IN READ"
-        (Just val) -> setVal var val
+        (Just val) -> setVar var val
 
-getVal :: Var -> Code Val
-getVal (FloatVar name []) = do
-    val <- getVar name
-    return (FloatVal val)
-getVal (IntVar name []) = do
-    val <- getVar name
-    return (FloatVal (fromIntegral (val :: Int))) -- only vars can be Int
-getVal (StringVar name []) = do
-    val <- getVar name
-    return (StringVal val)
-getVal arr = do
-    let (name, xs) =
-            case arr of
-                (FloatVar name xs) -> (name, xs)
-                (IntVar name xs) -> (name, xs)
-                (StringVar name xs) -> (name, xs)
+getVar :: Var -> Code Val
+getVar (ScalarVar vn) = getScalarVar vn
+getVar (ArrVar vn xs) = do
     inds <- mapM eval xs
     is <- checkArrInds inds
-    case arr of
-        (FloatVar _ _) -> do
-            val <- getArr name is
-            return (FloatVal val)
-        (IntVar _ _) -> do
-            val <- getArr name is
-            return (FloatVal (fromIntegral (val :: Int)))
-        (StringVar _ _) -> do
-            val <- getArr name is
-            return (StringVal val)
+    val <- getArrVar vn is
+    return $ case val of
+        (IntVal iv) -> FloatVal (fromIntegral iv)
+        _           -> val
 
-setVal :: Var -> Val -> Code ()
-setVal (FloatVar name []) (FloatVal val) = setVar name val
-setVal (FloatVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
-setVal (IntVar name []) (FloatVal val) = setVar name (floatToInt val)
-setVal (IntVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
-setVal (StringVar name []) (StringVal val) = setVar name val
-setVal (StringVar name []) _ = basicError "!TYPE MISMATCH IN ASSIGNMENT"
-setVal arr val = do
-    let (name, xs) =
-            case arr of
-                (FloatVar name xs) -> (name, xs)
-                (IntVar name xs) -> (name, xs)
-                (StringVar name xs) -> (name, xs)
+setVar :: Var -> Val -> Code ()
+setVar (ScalarVar vn) val = setScalarVar vn val
+setVar (ArrVar vn xs) val = do
     inds <- mapM eval xs
     is <- checkArrInds inds
-    case (arr, val) of
-        ((FloatVar _ _), FloatVal fv) -> setArr name is fv
-        ((IntVar _ _), FloatVal fv) -> setArr name is (floatToInt fv :: Int)
-        ((StringVar _ _), StringVal sv) -> setArr name is sv
-        (_,_) -> basicError "!TYPE MISMATCH IN ASSIGNMENT"
+    val' <- coerce vn val
+    setArrVar vn is val'
 
-interpDim :: Var -> Code ()
-interpDim arr = do
-    let (name, xs) =
-            case arr of
-                (FloatVar name xs) -> (name, xs)
-                (IntVar name xs) -> (name, xs)
-                (StringVar name xs) -> (name, xs)
-    inds <- mapM eval xs -- should we allow expressions?
+coerce :: Typeable a => a -> Val -> Code Val
+coerce var val = case (typeOf var, val) of
+    (IntType,    (FloatVal fv))  -> return $ IntVal (floatToInt fv)
+    (FloatType,  (FloatVal fv))  -> return val
+    (StringType, (StringVal fv)) -> return val
+    (_,          _)              -> basicError "!TYPE MISMATCH IN LET" >> return val
+
+interpDim :: (VarName, [Expr]) -> Code ()
+interpDim (vn, xs) = do
+    inds <- mapM eval xs
     is <- checkArrInds inds
     -- add 1, so that range is from 0 to user-specified bound
     let bounds = map (1+) is
-    case arr of
-        (FloatVar _ _) -> do
-            dimArray name bounds (defVal :: Float)
-            return ()
-        (IntVar _ _) -> do
-            dimArray name bounds (defVal :: Int)
-            return ()
-        (StringVar _ _) -> do
-            dimArray name bounds (defVal :: String)
-            return ()
+    dimArray vn bounds
+    return ()
 
 checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
 checkArrInds inds = do

@@ -1,5 +1,5 @@
 -- BasicSyntax.hs
--- Describes the abstract syntax of BASIC.
+-- Describes the abstract syntax of 
 -- Lyle Kopnicky
 
 module BasicSyntax where
@@ -11,17 +11,33 @@ type Label = Int
 
 -- TODO: Check if Eq is really necessary for syntax elements
 
+data ValType = FloatType | IntType | StringType
+    deriving (Show,Eq)
+
+class Typeable a where
+    typeOf :: a -> ValType
+
 data Literal =
     FloatLit Float
   | StringLit String
     deriving (Show,Eq)
 
--- Simple variables have an empty expression list, arrays a non-empty one
-data Var =
-    FloatVar String [Expr]
-  | IntVar String [Expr]
-  | StringVar String [Expr]
+instance Typeable Literal where
+    typeOf (FloatLit  _) = FloatType
+    typeOf (StringLit _) = StringType
+
+data VarName = VarName ValType String
     deriving (Show,Eq)
+
+instance Typeable VarName where
+    typeOf (VarName valType _) = valType
+
+data Var = ScalarVar VarName | ArrVar VarName [Expr]
+    deriving (Show, Eq)
+
+instance Typeable Var where
+    typeOf (ScalarVar varName) = typeOf varName
+    typeOf (ArrVar varName _)  = typeOf varName
 
 data BinOp =
     AddOp | SubOp | MulOp | DivOp | PowOp
@@ -32,7 +48,7 @@ data BinOp =
 data Expr =
     LitX Literal
   | VarX Var
-  | FnX Var [Expr]
+  | FnX VarName [Expr]
   | MinusX Expr
   | NotX Expr
   | BinX BinOp Expr Expr
@@ -43,15 +59,15 @@ data Expr =
 
 data Statement =
     LetS Var Expr
-  | DimS [Var]
+  | DimS [(VarName, [Expr])]
   | GotoS Label
   | GosubS Label
   | OnGotoS Expr [Label]
   | OnGosubS Expr [Label]
   | ReturnS
   | IfS Expr [Tagged Statement]
-  | ForS Var Expr Expr Expr
-  | NextS (Maybe [Var])
+  | ForS VarName Expr Expr Expr
+  | NextS (Maybe [VarName])
   | PrintS [Expr] Bool -- True if should print newline
   | InputS (Maybe String) [Var]
   | EndS
@@ -59,7 +75,7 @@ data Statement =
   | ReadS [Var]
   | RestoreS (Maybe Label)
   | DataS String
-  | DefFnS Var [Var] Expr
+  | DefFnS VarName [VarName] Expr
   | RemS String
     deriving (Show,Eq)
 
