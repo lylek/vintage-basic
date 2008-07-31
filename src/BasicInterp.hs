@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -XParallelListComp #-}
+
 -- BasicInterp.hs
 -- The heart of the interpreter, which uses the Basic monad.
 -- Lyle Kopnicky
@@ -360,7 +362,7 @@ interpS _ (DataS _) = return ()
 
 interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
     assert
-        (and (zipWith (\p v -> typeOf p == typeOf v) params vals))
+        (and [typeOf p == typeOf v | p <- params | v <- vals])
         "!TYPE MISMATCH IN FN"
     stashedVals <- mapM getScalarVar params
     sequence_ $ zipWith setScalarVar params vals
