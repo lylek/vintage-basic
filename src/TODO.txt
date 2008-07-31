@@ -1,9 +1,0 @@
-Figure out the right way to handle recording the position of a statement.
-Perhaps replace RawLine with Tagged String, and TokenizedLine with Tagged [Tagged Token],
-and Line with Tagged [Tagged Statement]. Right now we have to force lookahead by using
-getInput.
-
-Questions:
-
-Why the rank-3 polymorphism in 'trap', but not in 'catchC'?
-It makes it difficult to call 'trap' properly. Is it really useful?
