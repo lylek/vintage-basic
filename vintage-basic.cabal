@@ -1,0 +1,28 @@
+Name:          vintage-basic
+Version:       0.8
+Cabal-Version: >= 1.2
+Stability:     experimental
+Synopsis:      Interpreter for 1970s-era BASIC
+Description:
+    An interpreter for what is essentially Microsoft BASIC v2,
+    what you might find on a computer in the late 70s or early
+    80s, such as the Commodore 64.
+    .
+    Rather than making use of traditional stack-based primitives,
+    the implementation uses monad transformers, including one
+    with resumable exceptions that can caught by a program's
+    continuation rather than its context.
+Category:      Compilers/Interpreters
+License:       BSD3
+License-File:  LICENSE.txt
+Author:        Lyle Kopnicky
+Maintainer:    lyle@vintage-basic.net
+Homepage:      http://www.vintage-basic.net
+Build-Type:    Simple
+Tested-With:   GHC==6.8.2, GHC==6.10.1
+Extra-Source-Files: src/*_test.hs src/run_test.hs examples/*.bas README.txt
+
+Executable vintbas.exe
+  Main-is:       Basic.hs
+  Build-Depends: base
+  GHC-Options:   -O2
