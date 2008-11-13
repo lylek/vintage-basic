@@ -75,7 +75,7 @@ runProgram prog = do
                then return ()
                else do
                    state <- get
-                   printString (show x ++ " IN LINE " ++ show (lineNumber state))
+                   printString (show x ++ " IN LINE " ++ show (lineNumber state) ++ "\n")
             continue False
     hFlush stdout
     runBasic (catchC errorDumper prog)
