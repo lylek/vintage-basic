@@ -4,7 +4,7 @@
 
 module BasicPrinter where
 
-import List
+import Data.List
 import BasicLexCommon
 import BasicSyntax
 import BasicBuiltin(Builtin,builtinToStrAssoc)

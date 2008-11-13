@@ -18,9 +18,9 @@ import Data.Array.MArray
 import Data.Array.IO
 import Data.Ix
 import Data.Maybe
+import Data.Time
 import System.IO
 import System.Random
-import System.Time
 import BasicPrinter(printVar,printVarName)
 import BasicResult
 import BasicSyntax
@@ -198,9 +198,9 @@ getString = liftIO $ hFlush stdout >> getLine
 
 secondsSinceMidnight :: Code Int
 secondsSinceMidnight = do
-    clockTime <- liftIO $ getClockTime
-    calendarTime <- liftIO $ toCalendarTime clockTime
-    return ((ctHour calendarTime * 24 + ctMin calendarTime) * 60 + ctSec calendarTime)
+    zonedTime <- liftIO getZonedTime
+    return (floor $ toRational $ timeOfDayToTime $ localTimeOfDay $
+      zonedTimeToLocalTime zonedTime)
 
 seedRandom :: Int -> Code ()
 seedRandom i = modify (\state -> state { randomGen = (mkStdGen i) })
