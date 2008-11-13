@@ -61,18 +61,3 @@ genImport testModule = "import qualified " ++ testModule ++ "\n"
 genTest testModule testFunc =
     let qualifiedTest = testModule ++ "." ++ testFunc
        in "                TestLabel \"" ++ qualifiedTest ++ "\" " ++ qualifiedTest
-
-{-
-Example generated code:
-
-main = do
-   (Counts cases tried errors failures) <- runTestTT $
-      TestList [
-                TestLabel "BasicLineScanner_test.test_LineScanner" BasicLineScanner_test.test_LineScanner,
-                TestLabel "BasicLineScanner_test.test_reports_error_if_line_doesn't_start_with_number" BasicLineScanner_test.test_reports_error_if_line_doesn't_start_with_number,
-                TestLabel "BasicLineScanner_test.test_reports_error_if_file_doesn't_end_in_newline" BasicLineScanner_test.test_reports_error_if_file_doesn't_end_in_newline
-               ]
-   exitWith $ if errors > 0 || failures > 0
-                then ExitFailure (errors+failures)
-                else ExitSuccess
--}
