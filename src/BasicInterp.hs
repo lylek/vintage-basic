@@ -401,6 +401,9 @@ checkInput var s = case typeOf var of
     FloatType  -> case readFloat s of
         (Just v) -> Just (FloatVal v)
         _ -> Nothing
+    IntType -> case readFloat s of
+        (Just v) -> Just (IntVal (floatToInt v))
+        _ -> Nothing
 
 interpRead :: Var -> Code ()
 interpRead var = do
@@ -455,6 +458,7 @@ showVal :: Val -> String
 showVal (FloatVal v) =
     let i = floatToInt v
      in " " ++ (if fromIntegral i == v then show i else show v) ++ " "
+showVal (IntVal i) = show i
 showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()
