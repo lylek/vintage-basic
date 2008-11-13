@@ -1,33 +1,15 @@
 To compile:
 
-ghc -fglasgow-exts --make Basic -o basic
+runhaskell Setup.lhs configure
+runhaskell Setup.lhs build
+
+To install:
+
+runhaskell Setup.lhs install
 
 You can then run the resulting program as
 
-  basic [<.bas source file> ...]
-
-When you run a program it will first show the original
-source, then the prettyprinted source, then the output.
-
-The included writeup.pdf is for an older version of
-the program.  More things have been added since.  It
-still lacks builtin functions, DEF FN, ON-GOTO/GOSUB,
-and READ-DATA.  But it has a very nice INPUT!
-
-I've improved the parser since then.  And the new version
-also has a cleverer jumptable which effectively memoizes
-interpreted code.  Sort of like a JIT!
-
-Sorry, there aren't nearly enough comments in the code.
-
-Note: You may wonder why I have an abstract Parser
-interface, then a single instance called SimpleParser.
-It seems like over-abstraction.  Well originally I just
-had a Parser module and a BasicParser module that used
-it.  Well the reason is that I was trying to develop
-a new parser with lookahead, called LAParser.  I wrote
-it but I had a serious typing problem with it, so I
-aborted that idea.
+  vintbas [<.bas source file> ...]
 
 The monad transformer I created is CPST.  Monad
 transformers are basically monad building-blocks.  You
