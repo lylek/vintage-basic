@@ -3,7 +3,7 @@
 30 FORJ=1TO(LINES+1)/2-I+1:PRINT" ";:NEXT
 40 FORJ=1TOI*2-1:PRINT"*";:NEXT
 50 PRINT
-60 NEXTQ
+60 NEXTQ:REM will produce next without for error
 70 FORI=1TOLIVES/2:REM note misspelled variable is the same
 75 REM because variables are unique to only two characters
 80 FORJ=1TOI+1:PRINT" ";:NEXT
