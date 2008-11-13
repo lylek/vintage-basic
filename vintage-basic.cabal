@@ -19,10 +19,20 @@ Author:        Lyle Kopnicky
 Maintainer:    lyle@vintage-basic.net
 Homepage:      http://www.vintage-basic.net
 Build-Type:    Simple
-Tested-With:   GHC==6.8.2, GHC==6.10.1
+Tested-With:   GHC==6.10.1
 Extra-Source-Files: src/*_test.hs src/run_test.hs examples/*.bas README.txt
 
-Executable vintbas.exe
-  Main-is:       Basic.hs
-  Build-Depends: base
-  GHC-Options:   -O2
+Executable vintbas
+  Main-is:        Basic.hs
+  Build-Depends:  base >=3,
+                  array >=0.1,
+                  mtl >=1.1,
+                  parsec >=2.1,
+                  random >=1,
+                  time >=1.1,
+                  HUnit >=1.2,
+                  directory >=1,
+                  process >=1,
+                  regex-compat >=0.71
+  HS-Source-Dirs: src
+  GHC-Options:    -O2

@@ -1,11 +1,15 @@
 To compile:
 
-runhaskell Setup.lhs configure
-runhaskell Setup.lhs build
+runhaskell Setup.hs configure
+runhaskell Setup.hs build
+
+To run unit tests:
+
+runhaskell Setup.hs test
 
 To install:
 
-runhaskell Setup.lhs install
+runhaskell Setup.hs install
 
 You can then run the resulting program as
 

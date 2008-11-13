@@ -14,4 +14,5 @@ runAllTests a b pd lb = do
     setCurrentDirectory "src"
     system "runhaskell run_tests.hs"
     removeFile "test_driver.hs"
+    setCurrentDirectory ".."
     return ()
