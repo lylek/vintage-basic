@@ -35,4 +35,4 @@ Executable vintbas
                   process >=1,
                   regex-compat >=0.71
   HS-Source-Dirs: src
-  GHC-Options:    -O2
+  GHC-Options:    -Wall -O2
