@@ -10,6 +10,7 @@ import System.Exit(exitFailure)
 import System.IO(hFlush,stdout)
 import BasicSyntax(Line(..))
 import Text.ParserCombinators.Parsec(parse,setPosition,sourceLine)
+import Text.ParserCombinators.Parsec.Error(ParseError,errorPos,errorMessages,showErrorMessages)
 import DurableTraps(Excep(..),done)
 import BasicMonad -- just a hack - remove this later
 import BasicLexCommon(Tagged(..))
@@ -34,7 +35,7 @@ scanLines :: String -> String -> IO [RawLine]
 scanLines fileName text =
     case parse rawLinesP fileName text of
         (Left parseError) -> do
-            putStrLn ("!LINE NUMBERING ERROR AT " ++ show parseError)
+            putStrLn $ showLineNumberingError parseError
             exitFailure
         (Right rawLines) -> sortNubLines rawLines
 
@@ -51,7 +52,7 @@ parseLine :: TokenizedLine -> IO Line
 parseLine (Tagged pos taggedTokens) = do
     case parse (setPosition pos >> statementListP) "" taggedTokens of
         (Left parseError) -> do
-            putStrLn ("!SYNTAX ERROR AT " ++ show parseError)
+            putStrLn $ showSyntaxError parseError
             exitFailure
         (Right statementList) ->
             return (Line (sourceLine pos) statementList)
@@ -74,8 +75,14 @@ sortNubLines lineList = do
         | (Tagged pos _) <- duplicateLines]
     return nubbedLines
 
--- Other things we could do:
--- * Pre-check types
--- * Pre-check labels, generate code in place of labels
--- * Convert variable references to IORefs
--- Is it easiest to do these with staging?
+showParseError :: String -> String -> String -> ParseError -> String
+showParseError msgErrorType msgLine msgEndOfInput parseError =
+    let pos = errorPos parseError
+        messages = errorMessages parseError
+        line = sourceLine pos
+    in
+        "!" ++ msgErrorType ++ " ERROR IN " ++ msgLine ++ " " ++ show line
+        ++ showErrorMessages "OR" " UNKNOWN" " EXPECTING" " UNEXPECTED" msgEndOfInput messages
+
+showSyntaxError = showParseError "SYNTAX" "LINE" "END OF LINE"
+showLineNumberingError = showParseError "LINE NUMBERING" "RAW LINE" "END OF FILE"

@@ -19,7 +19,7 @@ rawLineP = do
     n <- labelP
     whiteSpace
     pos <- getPosition
-    s <- manyTill (anyChar <?> "character") newline
+    s <- manyTill (anyChar <?> "CHARACTER") newline
     whiteSpace
     many blankLineP
     return (Tagged (setSourceLine pos n) s)
@@ -30,5 +30,5 @@ rawLinesP = do
     many blankLineP
     ls <- many rawLineP
     many blankLineP
-    eof <?> "end of file"
+    eof <?> "END OF FILE"
     return ls

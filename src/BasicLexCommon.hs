@@ -14,7 +14,7 @@ instance (Eq a) => Eq (Tagged a) where
     (Tagged _ x) == (Tagged _ y) = x == y
 
 whiteSpaceChar :: Parser Char
-whiteSpaceChar = oneOf " \v\f\t" <?> "space"
+whiteSpaceChar = oneOf " \v\f\t" <?> "SPACE"
 
 whiteSpace :: Parser ()
 whiteSpace = skipMany (whiteSpaceChar <?> "")
@@ -24,7 +24,7 @@ legalChar = letter <|> digit <|> oneOf ",:;()$%=<>+-*/^?"
 
 labelP :: Parser Int
 labelP = do
-    s <- many1 (digit <?> "") <?> "line number"
+    s <- many1 (digit <?> "") <?> "LINE NUMBER"
     return (read s)
 
 skip0or1 :: GenParser tok st a -> GenParser tok st ()

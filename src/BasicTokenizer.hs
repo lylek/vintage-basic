@@ -133,7 +133,7 @@ tokToStrAssoc = [(t,s) | (s,t) <- strToTokAssoc]
 anyTokP :: Parser Token
 anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
                   ++ [do keyword s; whiteSpace; return t | (s,t) <- strToTokAssoc]
-                  ++ [charTokP]) <?> "legal BASIC character"
+                  ++ [charTokP]) <?> "LEGAL BASIC CHARACTER"
 
 isBuiltinTok :: Token -> Bool
 isBuiltinTok (BuiltinTok _) = True

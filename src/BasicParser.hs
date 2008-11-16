@@ -10,6 +10,7 @@ module BasicParser(statementListP) where
 import Data.Char
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
+import Text.ParserCombinators.Parsec.Error
 import BasicFloatParser
 import BasicLexCommon
 import BasicSyntax
@@ -29,7 +30,7 @@ skipSpace = skipMany $ tokenP (==SpaceTok)
 
 lineNumP :: TokParser Int
 lineNumP =
-    do s <- many1 (tokenP (charTokTest isDigit) <?> "") <?> "line number"
+    do s <- many1 (tokenP (charTokTest isDigit) <?> "") <?> "LINE NUMBER"
        return (read (map (getCharTokChar . getTaggedVal) s))
 
 -- LITERALS
@@ -351,7 +352,7 @@ statementListP :: TokParser [Tagged Statement]
 statementListP = do
     many (tokenP (==ColonTok))
     sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
-    eol <?> ": or end of line"
+    eol <?> ": or END OF LINE"
     return sl
 
 anyTokenP :: TokParser (Tagged Token)
@@ -361,4 +362,4 @@ eol :: TokParser ()
 eol = try (do {
     tok <- anyTokenP;
     unexpected (printToken (getTaggedVal tok));
-  } <|> return ()) <?> "end of line"
+  } <|> return ()) <?> "END OF LINE"
