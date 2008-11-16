@@ -7,14 +7,14 @@ module BasicExecuter where
 
 import Data.List(deleteFirstsBy,nubBy,sortBy)
 import System.Exit(exitFailure)
-import BasicSyntax(Line(..))
 import Text.ParserCombinators.Parsec(parse,setPosition,sourceLine)
 import Text.ParserCombinators.Parsec.Error(ParseError,errorPos,errorMessages,showErrorMessages)
-import BasicMonad -- just a hack - remove this later
+import BasicInterp(interpLines)
 import BasicLexCommon(Tagged(..))
 import BasicLineScanner(RawLine,rawLinesP)
+import BasicMonad(runProgram)
 import BasicParser(statementListP)
-import BasicInterp(interpLines)
+import BasicSyntax(Line(..))
 import BasicTokenizer(TokenizedLine,taggedTokensP)
 
 -- TODO: Consider sending errors to stderr.
