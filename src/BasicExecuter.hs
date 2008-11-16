@@ -5,20 +5,17 @@
 
 module BasicExecuter where
 
-import Data.List(deleteFirstsBy,mapAccumR,nubBy,sortBy)
+import Data.List(deleteFirstsBy,nubBy,sortBy)
 import System.Exit(exitFailure)
-import System.IO(hFlush,stdout)
 import BasicSyntax(Line(..))
 import Text.ParserCombinators.Parsec(parse,setPosition,sourceLine)
 import Text.ParserCombinators.Parsec.Error(ParseError,errorPos,errorMessages,showErrorMessages)
-import DurableTraps(Excep(..),done)
 import BasicMonad -- just a hack - remove this later
 import BasicLexCommon(Tagged(..))
 import BasicLineScanner(RawLine,rawLinesP)
-import BasicTokenizer(Token,TokenizedLine,taggedTokensP)
 import BasicParser(statementListP)
-import BasicPrinter(printLines)
 import BasicInterp(interpLines)
+import BasicTokenizer(TokenizedLine,taggedTokensP)
 
 -- TODO: Consider sending errors to stderr.
 -- TODO: On syntax error, consider printing line with marked error.
@@ -84,5 +81,8 @@ showParseError msgErrorType msgLine msgEndOfInput parseError =
         "!" ++ msgErrorType ++ " ERROR IN " ++ msgLine ++ " " ++ show line
         ++ showErrorMessages "OR" " UNKNOWN" " EXPECTING" " UNEXPECTED" msgEndOfInput messages
 
+showSyntaxError :: ParseError -> String
 showSyntaxError = showParseError "SYNTAX" "LINE" "END OF LINE"
+
+showLineNumberingError :: ParseError -> String
 showLineNumberingError = showParseError "LINE NUMBERING" "RAW LINE" "END OF FILE"

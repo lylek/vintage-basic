@@ -35,3 +35,9 @@ three.  But I like shift and think it's neat that I
 can define callCC in terms of it and reset, but not
 vice-versa.  So there.  Plus, my shift and callCC are
 rank-3 polymorphic!  Nobody else achieves that flexibility.
+
+Other things we could do:
+* Pre-check types
+* Pre-check labels, generate code in place of labels
+* Convert variable references to IORefs
+Is it easiest to do these with staging?

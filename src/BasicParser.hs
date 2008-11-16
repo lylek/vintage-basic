@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -fglasgow-exts -fno-warn-orphans #-}
 
 -- BasicParser.hs
 -- Parses BASIC source code to produce abstract syntax.
@@ -10,7 +10,6 @@ module BasicParser(statementListP) where
 import Data.Char
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
-import Text.ParserCombinators.Parsec.Error
 import BasicFloatParser
 import BasicLexCommon
 import BasicSyntax
@@ -20,8 +19,9 @@ import BasicTokenizer
 
 -- only first 2 chars and 1st digit of variable names are siginificant
 -- should make this settable by option
-varSignifLetters = 2 :: Int
-varSignifDigits = 1 :: Int
+varSignifLetters, varSignifDigits :: Int
+varSignifLetters = 2
+varSignifDigits = 1
 
 type TokParser = GenParser (Tagged Token) ()
 
@@ -89,15 +89,18 @@ varNameP = do
     skipSpace
     return vn
 
+scalarVarP :: GenParser (Tagged Token) () Var
 scalarVarP = do
     vn <- varNameP
     return (ScalarVar vn)
 
+arrVarP :: GenParser (Tagged Token) () Var
 arrVarP = do
     vn <- varNameP
     xs <- argsP
     return (ArrVar vn xs)
 
+varP :: GenParser (Tagged Token) () Var
 varP = try arrVarP <|> scalarVarP
 
 -- BUILTINS
@@ -262,6 +265,7 @@ printSPExprs =
        xs' <- many (try (optionally (tokenP (==SemiTok)) >> printExprP))
        return (x:xs')
 
+printExprP :: TokParser Expr
 printExprP = nextZoneP <|> exprP
 
 nextZoneP :: TokParser Expr
@@ -302,7 +306,7 @@ dimSP = do
 
 randomizeSP :: TokParser Statement
 randomizeSP = do
-    tok <- tokenP (==RandomizeTok)
+    _ <- tokenP (==RandomizeTok)
     return RandomizeS
 
 readSP :: TokParser Statement
