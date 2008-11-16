@@ -40,4 +40,6 @@ Other things we could do:
 * Pre-check types
 * Pre-check labels, generate code in place of labels
 * Convert variable references to IORefs
-Is it easiest to do these with staging?
+  Is it easiest to do these with staging?
+* Consider sending errors to stderr.
+* On syntax error, consider printing line with marked error.

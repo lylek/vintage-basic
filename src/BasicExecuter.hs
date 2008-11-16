@@ -17,9 +17,6 @@ import BasicParser(statementListP)
 import BasicSyntax(Line(..))
 import BasicTokenizer(TokenizedLine,taggedTokensP)
 
--- TODO: Consider sending errors to stderr.
--- TODO: On syntax error, consider printing line with marked error.
-
 execute :: FilePath -> IO ()
 execute fileName = do
     text <- readFile fileName
