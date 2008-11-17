@@ -31,6 +31,7 @@ printVar (ArrVar vn xs) = printVarName vn ++ printArgs xs
 printArgs :: [Expr] -> String
 printArgs xs = "(" ++ concat (intersperse "," (map printExpr xs)) ++ ")"
 
+printOp :: BinOp -> String
 printOp AddOp = "+"
 printOp SubOp = "-"
 printOp MulOp = "*"
@@ -53,13 +54,14 @@ printExpr (LitX lit) = printLit lit
 printExpr (VarX var) = printVar var
 printExpr (FnX vn xs) = printVarName vn ++ printArgs xs
 printExpr (MinusX x) = "-" ++ printExpr x
+printExpr NextZoneX = ","
 printExpr (NotX x) = "NOT " ++ printExpr x
 printExpr (ParenX x) = "(" ++ printExpr x ++ ")"
 printExpr (BinX op x1 x2) = printExpr x1 ++ printOp op ++ printExpr x2
 printExpr (BuiltinX b xs) = printBuiltin b ++ printArgs xs
 
 printTaggedStatement :: Tagged Statement -> String
-printTaggedStatement (Tagged pos statement) = printStatement statement
+printTaggedStatement (Tagged _ statement) = printStatement statement
 
 printStatement :: Statement -> String
 printStatement (LetS v x) = "LET " ++ printVar v ++ "=" ++ printExpr x
@@ -97,8 +99,11 @@ printStatement (DefFnS vn vns x) =
     ++ " = " ++ printExpr x
 printStatement (RemS s) = "REM" ++ s
 
+printStatementList :: [Tagged Statement] -> String
 printStatementList ss = concat $ intersperse ":" (map printTaggedStatement ss)
 
+printLine :: Line -> String
 printLine (Line n ss) = show n ++ " " ++ printStatementList ss ++ "\n"
 
-printLines lines = concat $ map printLine lines
+printLines :: [Line] -> String
+printLines progLines = concatMap printLine progLines

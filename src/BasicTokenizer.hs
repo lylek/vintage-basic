@@ -68,19 +68,16 @@ isDataTok _ = False
 charTokP :: Parser Token
 charTokP = do c <- legalChar; return (CharTok (toUpper c))
 
-isCharTok :: Token -> Bool
-isCharTok (CharTok _) = True
-isCharTok _ = False
-
 charTokTest :: (Char -> Bool) -> Token -> Bool
 charTokTest f (CharTok c) = f c
-charTokTest f _ = False
+charTokTest _ _ = False
 
 taggedCharToksToString :: [Tagged Token] -> String
 taggedCharToksToString = map (getCharTokChar . getTaggedVal)
 
 -- still need: numeric literals (incl labels), vars
 
+strToTokAssoc :: [(String, Token)]
 strToTokAssoc =
     [
      (",",         CommaTok),
@@ -128,6 +125,7 @@ strToTokAssoc =
      ("END",       EndTok)
   ] ++ [(s, BuiltinTok b) | (b,s) <- builtinToStrAssoc]
 
+tokToStrAssoc :: [(Token, String)]
 tokToStrAssoc = [(t,s) | (s,t) <- strToTokAssoc]
 
 anyTokP :: Parser Token
@@ -147,9 +145,9 @@ taggedTokenP =
 
 taggedTokensP :: Parser [Tagged Token]
 taggedTokensP =
-    do tokens <- many taggedTokenP
+    do toks <- many taggedTokenP
        eof <?> ""
-       return tokens
+       return toks
 
 -- The single-token parser used at the parser level
 tokenP :: (Token -> Bool) -> GenParser (Tagged Token) () (Tagged Token)
@@ -157,6 +155,7 @@ tokenP test = token (printToken . getTaggedVal) getPosTag testTaggedToken
     where testTaggedToken (Tagged pos tok) =
             if test tok then Just (Tagged pos tok) else Nothing
 
+printToken :: Token -> String
 printToken tok =
     case (lookup tok tokToStrAssoc) of
         (Just s) -> s
@@ -167,4 +166,4 @@ printToken tok =
                 (RemTok s) -> "REM" ++ s
                 SpaceTok -> " "
                 (StringTok s) -> "\"" ++ s ++ "\""
-                otherwise -> error "printToken: unrecognized token."
+                _ -> error "printToken: unrecognized token."

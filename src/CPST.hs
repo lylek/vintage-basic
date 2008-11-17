@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -fglasgow-exts -XUndecidableInstances #-}
 
 -- CPST.hs
 -- A continuation-passing style monad transformer,
@@ -10,8 +10,8 @@
 
 module CPST where
 
-import Control.Monad
-import Control.Monad.Trans
+import Control.Monad.Reader
+import Control.Monad.State
 
 -- Definition of the CPST (continuation-passing style) monad --
 
@@ -63,3 +63,13 @@ callCC :: Monad m => ((forall a. i -> CPST o m a) -> CPST o m i) -> CPST o m i
 -- disposes of the context.
 --callCC f = CPST (\k -> unCPST (f (\x -> CPST (\_ -> k x))) k)
 callCC f = shift (\k -> (f (\x -> k x >>= abort)) >>= k)
+
+instance MonadReader r m => MonadReader r (CPST o m) where
+    ask = lift ask
+    local f (CPST m') =
+        CPST (\k -> do r <- ask
+                       local f (m' (\x -> local (const r) (k x))))
+
+instance MonadState s m => MonadState s (CPST o m) where
+    get = lift get
+    put s = lift $ put s

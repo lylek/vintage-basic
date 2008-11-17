@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XParallelListComp #-}
+{-# OPTIONS_GHC -XParallelListComp -XFlexibleContexts -XRank2Types #-}
 
 -- BasicInterp.hs
 -- The heart of the interpreter, which uses the Basic monad.
@@ -10,9 +10,7 @@ import Data.List
 import Data.Maybe
 import Text.ParserCombinators.Parsec(parse)
 import Text.ParserCombinators.Parsec.Pos(sourceLine)
-import CPST
 import DurableTraps
-import ExceptionHandlers
 import BasicBuiltin(Builtin(..))
 import BasicLexCommon(Tagged(..))
 import BasicMonad
@@ -29,10 +27,10 @@ data JumpTableEntry = JumpTableEntry {
 type JumpTable = [JumpTableEntry]
 
 programLookup :: JumpTable -> Label -> (Maybe Program)
-programLookup jt lab = lookup lab [(l, p) | (JumpTableEntry l p d) <- jt]
+programLookup jt lab = lookup lab [(jtLabel jte, jtProgram jte) | jte <- jt]
 
 dataLookup :: JumpTable -> Label -> (Maybe [String])
-dataLookup jt lab = lookup lab [(l, d) | (JumpTableEntry l p d) <- jt]
+dataLookup jt lab = lookup lab [(jtLabel jte, jtData jte) | jte <- jt]
 
 -- Note that jumpTable and interpLine are mutually recursive.
 -- The jumpTable contains interpreted code, which in turn calls
@@ -41,14 +39,14 @@ dataLookup jt lab = lookup lab [(l, d) | (JumpTableEntry l p d) <- jt]
 -- a just-in-time compiler.  (The only time code is reinterpreted
 -- is following an IF statement.)
 interpLines :: [Line] -> Program
-interpLines lines =
+interpLines progLines =
     let interpLine line@(Line lab stmts) =
             (lab, mapM_ (interpTS jumpTable) stmts, dataFromLine line)
         makeTableEntry (accumCode, accumData) (lab, codeSeg, lineData) =
             let accumCode' = codeSeg >> accumCode
                 accumData' = lineData ++ accumData
                 in ((accumCode', accumData'), JumpTableEntry lab accumCode' accumData')
-        jumpTable = snd $ mapAccumR makeTableEntry (done, []) $ map interpLine lines
+        jumpTable = snd $ mapAccumR makeTableEntry (done, []) $ map interpLine progLines
     in do
         case jumpTable of
             ((JumpTableEntry _ prog dat) : _) -> do
@@ -62,49 +60,47 @@ interpLines lines =
 boolToVal :: Bool -> Val
 boolToVal t = if t then FloatVal (-1) else FloatVal 0
 
-isFloat  v = typeOf v == FloatType
-isString v = typeOf v == StringType
-
+isNext :: BasicResult -> Bool
 isNext (Next Nothing) = True
 isNext _ = False
 
+isNextVar :: VarName -> BasicResult -> Bool
 isNextVar (VarName FloatType v1) (Next (Just v2)) = v1==v2
-isNextVar v1 _ = False
+isNextVar _ _ = False
 
+isReturn :: BasicResult -> Bool
 isReturn Return = True
 isReturn _ = False
 
-unFV (FloatVal fv) = fv
-unSV (StringVal sv) = sv
-
 liftFVOp1 :: (Float -> Float) -> Val -> Code Val
 liftFVOp1 f (FloatVal v1) = return $ FloatVal $ f v1
-liftFVOp1 f (StringVal _) = typeMismatch
+liftFVOp1 _ _             = typeMismatch
 
 liftFVBuiltin1 :: (Float -> Float) -> [Val] -> Code Val
 liftFVBuiltin1 f [FloatVal v1] = return $ FloatVal $ f v1
-liftFVBuiltin1 f _ = typeMismatch
+liftFVBuiltin1 _ _ = typeMismatch
 
 liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
 liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
-liftFVOp2 f _             _             = typeMismatch
+liftFVOp2 _ _             _             = typeMismatch
 
 liftFVBOp2 :: (Float -> Float -> Bool) -> Val -> Val -> Code Val
 liftFVBOp2 f (FloatVal v1) (FloatVal v2) = return $ boolToVal $ f v1 v2
-liftFVBOp2 f _             _             = typeMismatch
+liftFVBOp2 _ _             _             = typeMismatch
 
 liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
 liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
-liftSVOp2 f _              _              = typeMismatch
+liftSVOp2 _ _              _              = typeMismatch
 
 liftSVBOp2 :: (String -> String -> Bool) -> Val -> Val -> Code Val
 liftSVBOp2 f (StringVal v1) (StringVal v2) = return $ boolToVal $ f v1 v2
-liftSVBOp2 f _             _               = typeMismatch
+liftSVBOp2 _ _             _               = typeMismatch
 
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work
 valError :: String -> Code Val
 valError s = basicError s >> return (FloatVal 0)
 
+typeMismatch, invalidArgument, divisionByZero :: Code Val
 typeMismatch = valError "!TYPE MISMATCH IN EXPRESSION"
 invalidArgument = valError "!INVALID ARGUMENT"
 divisionByZero = valError "!DIVISION BY ZERO"
@@ -143,6 +139,7 @@ evalBinOp op =
             case (v1,v2) of
                 (FloatVal _,  FloatVal _ ) -> liftFVOp2 (+) v1 v2
                 (StringVal _, StringVal _) -> liftSVOp2 (++) v1 v2
+                (_,           _          ) -> typeMismatch
         SubOp -> liftFVOp2 (-)
         MulOp -> liftFVOp2 (*)
         DivOp -> \v1 v2 ->
@@ -155,8 +152,9 @@ evalBinOp op =
         PowOp -> liftFVOp2 (**)
         EqOp -> \v1 v2 ->
             case (v1,v2) of
-                (FloatVal _, FloatVal _)   -> liftFVBOp2 (==) v1 v2
+                (FloatVal  _, FloatVal  _) -> liftFVBOp2 (==) v1 v2
                 (StringVal _, StringVal _) -> liftSVBOp2 (==) v1 v2
+                (_,           _          ) -> typeMismatch
         NEOp -> liftFVBOp2 (/=)
         LTOp -> liftFVBOp2 (<)
         LEOp -> liftFVBOp2 (<=)
@@ -220,6 +218,7 @@ evalBuiltin builtin args = case builtin of
             return (FloatVal rv)
         _ -> typeMismatch
     SgnBI -> liftFVBuiltin1 (\v -> if v < 0 then -1 else if v > 0 then 1 else 0) args
+    SinBI -> liftFVBuiltin1 sin args
     SpcBI -> case args of
         [FloatVal fv] ->
             let iv = floatToInt fv in
@@ -258,7 +257,7 @@ interpTS jumpTable (Tagged pos statement) = do
 -- resumed trap.  The second one represents what is returned by interpS.
 interpS :: JumpTable -> Statement -> Code ()
 
-interpS _ (RemS s) = return ()
+interpS _ (RemS _) = return ()
 
 interpS _ EndS = end
 
@@ -289,11 +288,11 @@ interpS jumpTable (OnGotoS x labs) = interpComputed jumpTable "GOTO" GotoS x lab
 interpS jumpTable (OnGosubS x labs) = interpComputed jumpTable "GOSUB" GosubS x labs
 
 interpS jumpTable (IfS x sts) = do
-    val <- eval x
-    assert (isFloat val) "!TYPE MISMATCH IN IF"
-    if (unFV val)/=0
-        then mapM_ (interpTS jumpTable) sts
-        else return ()
+    v <- eval x
+    fv <- extractFloatOrFail "!TYPE MISMATCH IN IF" v
+    if fv == 0
+        then return ()
+        else mapM_ (interpTS jumpTable) sts
 
 -- Note that the loop condition isn't tested until a NEXT is reached.
 -- This is an intentionally authentic feature.  In fact, were we to try to
@@ -301,14 +300,12 @@ interpS jumpTable (IfS x sts) = do
 -- the loop - it is undecidable.
 interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
     v1 <- eval x1
-    assert (isFloat v1) "!TYPE MISMATCH IN FOR (INIT)"
+    _ <- extractFloatOrFail "!TYPE MISMATCH IN FOR (INIT)" v1
     setScalarVar control v1
     v2 <- eval x2
-    assert (isFloat v2) "!TYPE MISMATCH IN FOR (TO)"
-    let lim = unFV v2
+    lim <- extractFloatOrFail "!TYPE MISMATCH IN FOR (TO)" v2
     v3 <- eval x3
-    assert (isFloat v3) "!TYPE MISMATCH IN FOR EXPR (STEP)"
-    let step = unFV v3
+    step <- extractFloatOrFail "!TYPE MISMATCH IN FOR EXPR (STEP)" v3
     trap $ \ x passOn resume continue ->
         if isNext x || isNextVar control x
             then do
@@ -328,9 +325,7 @@ interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 interpS jumpTable (GosubS lab) =
     do let maybeCode = programLookup jumpTable lab
        assert (isJust maybeCode) ("!BAD GOSUB TARGET: " ++ show lab)
-       let f x passOn resume continue =
-               if isReturn x then continue False else passOn True
-       catchC f (fromJust maybeCode)
+       catchC gosubHandler (fromJust maybeCode)
        return ()
 interpS _ ReturnS = raiseCC Return
 
@@ -359,10 +354,14 @@ interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
     sequence_ $ zipWith setScalarVar params stashedVals
     return result
 
+gosubHandler :: BasicExceptionHandler
+gosubHandler x passOn _ continue = if isReturn x then continue False else passOn True
+
+interpComputed :: JumpTable -> String -> (Label -> Statement) -> Expr -> [Label] -> Code ()
 interpComputed jumpTable desc cons x labs = do
     v <- eval x
-    assert (isFloat v) ("!TYPE MISMATCH IN ON-" ++ desc)
-    let i = floatToInt (unFV v)
+    fv <- extractFloatOrFail ("!TYPE MISMATCH IN ON-" ++ desc) v
+    let i = floatToInt fv
     if i > 0 && i <= length labs
         then do
             let lab = labs !! (i-1)
@@ -370,6 +369,7 @@ interpComputed jumpTable desc cons x labs = do
         else
             return ()
 
+interpNextVar :: VarName -> Code ()
 interpNextVar (VarName FloatType v) = raiseCC (Next (Just v))
 interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"
 
@@ -433,8 +433,8 @@ setVar (ArrVar vn xs) val = do
 coerce :: Typeable a => a -> Val -> Code Val
 coerce var val = case (typeOf var, val) of
     (IntType,    (FloatVal fv))  -> return $ IntVal (floatToInt fv)
-    (FloatType,  (FloatVal fv))  -> return val
-    (StringType, (StringVal fv)) -> return val
+    (FloatType,  (FloatVal _ ))  -> return val
+    (StringType, (StringVal _)) -> return val
     (_,          _)              -> basicError "!TYPE MISMATCH IN LET" >> return val
 
 interpDim :: (VarName, [Expr]) -> Code ()
@@ -447,11 +447,11 @@ interpDim (vn, xs) = do
     return ()
 
 checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
-checkArrInds inds = do
-    assert (and (map isFloat inds)) "!ARRAY DIMS MUST BE NUMBERS"
-    assert (and (map (\(FloatVal ind) -> ind>=0) inds)) ("!NEGATIVE ARRAY DIMS")
-    let is = map (floatToInt . unFV) inds -- round dimensions as per standard
-    return is
+checkArrInds indVals = do
+    indFs <- mapM (extractFloatOrFail "!ARRAY DIMS MUST BE NUMBERS") indVals
+    assert (and (map (>=0) indFs)) ("!NEGATIVE ARRAY DIMS")
+    let inds = map floatToInt indFs -- round dimensions as per standard
+    return inds
 
 -- If Float is a round number, show it as an Int.
 showVal :: Val -> String
@@ -465,7 +465,7 @@ printVal :: Val -> Basic o ()
 printVal v = printString (showVal v)
 
 dataFromLine :: Line -> [String]
-dataFromLine (Line lab stmts) = concat (map (dataFromStatement . getTaggedVal) stmts)
+dataFromLine (Line _ stmts) = concat (map (dataFromStatement . getTaggedVal) stmts)
 
 dataFromStatement :: Statement -> [String]
 dataFromStatement (DataS s) =

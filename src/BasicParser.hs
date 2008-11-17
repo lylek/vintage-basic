@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
 
 -- BasicParser.hs
 -- Parses BASIC source code to produce abstract syntax.
@@ -40,14 +40,6 @@ floatLitP =
     do v <- floatP
        skipSpace
        return (FloatLit v)
-
-instance BasicFloatParser (Tagged Token) () where
-    digitP = do tok <- tokenP (charTokTest isDigit)
-                return (getCharTokChar $ getTaggedVal tok)
-    dotP   = tokenP (==DotTok)            >> return '.'
-    plusP  = tokenP (==PlusTok)           >> return '+'
-    minusP = tokenP (==MinusTok)          >> return '-'
-    charEP = tokenP (charTokTest (=='E')) >> return 'E'
 
 stringLitP :: TokParser Literal
 stringLitP =

@@ -8,24 +8,20 @@
 module BasicMonad where
 
 import Prelude hiding (lookup)
-import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans
 import Data.HashTable
 import Data.IORef
-import Data.Array.MArray
 import Data.Array.IO
-import Data.Ix
 import Data.Maybe
 import Data.Time
 import System.IO
 import System.Random
-import BasicPrinter(printVar,printVarName)
+import BasicPrinter(printVarName)
 import BasicResult
 import BasicSyntax
 import CPST
-import CPSTInstances
 import DurableTraps
 
 data Val = FloatVal Float | IntVal Int | StringVal String
@@ -48,7 +44,8 @@ data BasicStore = BasicStore {
     fnTable :: HashTable VarName (IORef ([Val] -> Code Val))
 }
 
-defBounds = [11] :: [Int] -- default array bounds: one dimension, 0-10
+defBounds :: [Int]
+defBounds = [11] -- default array bounds: one dimension, 0-10
 
 floatToInt :: Float -> Int
 floatToInt = floor
@@ -67,16 +64,19 @@ type BasicCont o i = Cont o BasicRT i
 type BasicExcep o i = Excep o BasicRT i
 type Code a = Basic (BasicExcep BasicResult ()) a
 type Program = Code (BasicExcep BasicResult ())
+type BasicExceptionHandler = ExceptionHandler BasicResult BasicRT
+
+errorDumper :: BasicExceptionHandler
+errorDumper x _ _ continue = do
+    if x == okValue
+       then return ()
+       else do
+           state <- get
+           printString (show x ++ " IN LINE " ++ show (lineNumber state) ++ "\n")
+    continue False
 
 runProgram :: Program -> IO ()
 runProgram prog = do
-    let errorDumper x (passOn :: Bool -> Code ()) resume continue = do
-            if x == okValue
-               then return ()
-               else do
-                   state <- get
-                   printString (show x ++ " IN LINE " ++ show (lineNumber state) ++ "\n")
-            continue False
     hFlush stdout
     runBasic (catchC errorDumper prog)
     return ()
@@ -89,10 +89,15 @@ runBasic m = do
     let store = BasicStore st at ft
     runStateT (runReaderT (runCPST m) store) (BasicState 0 0 0 (mkStdGen 0) [])
 
+assert :: Bool -> String -> Code ()
 assert cond err = if cond then return () else basicError err
 
 basicError :: String -> Code ()
 basicError err = raiseCC (Fail err) >> return ()
+
+extractFloatOrFail :: String -> Val -> Code Float
+extractFloatOrFail _   (FloatVal fv) = return fv
+extractFloatOrFail err _             = basicError err >> return 0
 
 getScalarVar :: VarName -> Basic o Val
 getScalarVar vn = do
@@ -116,9 +121,11 @@ setScalarVar vn val = do
 
 -- BASIC indices range from zero to an upper bound.
 -- We're storing 1+ that bound, to make computations easier.
+indicesAreWithinBounds :: [Int] -> [Int] -> Bool
 indicesAreWithinBounds bounds indices =
     and $ (zipWith (>) bounds indices) ++ (map (>=0) indices)
 
+arrIndex :: [Int] -> [Int] -> Int
 arrIndex bounds indices =
     let scales = tail $ scanr (*) 1 bounds
         in sum $ zipWith (*) scales indices
@@ -174,7 +181,8 @@ setFn vn fn = do
 setLineNumber :: Int -> Basic o ()
 setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })
 
-zoneWidth = 14 :: Int
+zoneWidth :: Int
+zoneWidth = 14
 
 printString :: String -> Basic o ()
 printString s = do
@@ -185,8 +193,8 @@ printString s = do
 
 endCol :: Int -> String -> Int    
 endCol startCol "" = startCol
-endCol startCol ('\n' : s) = endCol 0 s
-endCol startCol (c : s) = endCol (startCol + 1) s
+endCol _ ('\n' : s) = endCol 0 s
+endCol startCol (_ : s) = endCol (startCol + 1) s
 
 getOutputColumn :: Code Int
 getOutputColumn = do

@@ -9,13 +9,6 @@ module BasicRuntimeParser(dataValsP,readFloat) where
 import Text.ParserCombinators.Parsec
 import BasicFloatParser
 
-instance BasicFloatParser Char st where
-    digitP = digit
-    dotP   = char '.'
-    plusP  = char '+'
-    minusP = char '-'
-    charEP = char 'E'
-
 readFloat :: String -> Maybe Float
 readFloat s =
     case parse floatP "" s

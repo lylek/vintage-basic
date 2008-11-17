@@ -12,6 +12,7 @@ import ExceptionHandlers
 class Eq o => ResultType o where
     okValue :: o
 
+notOK :: ResultType a => a -> Bool
 notOK x = x /= okValue
 
 -- A continuation
@@ -31,13 +32,12 @@ data Excep o m i =
 raiseCC :: (Monad m, ResultType o) => o -> CPST (Excep o m i) m i
 raiseCC x = callCC (\k -> raise (Excep x return k))
 
-trap :: Monad m =>
-        (o
-         -> (forall a. Bool -> CPST (Excep o m ()) m a)
-         -> (forall a. Bool -> CPST (Excep o m ()) m a)
-         -> (forall a. Bool -> CPST (Excep o m ()) m a)
-         -> CPST (Excep o m ()) m (Excep o m ()))
-        -> CPST (Excep o m ()) m ()
+type ExceptionResumer o m = forall a. Bool -> CPST (Excep o m ()) m a
+
+type ExceptionHandler o m = Monad m => o -> ExceptionResumer o m -> ExceptionResumer o m
+    -> ExceptionResumer o m -> CPST (Excep o m ()) m (Excep o m ())
+
+trap :: Monad m => ExceptionHandler o m -> CPST (Excep o m ()) m ()
 
 -- This handler provides flexibility.  It takes a function 'f' as a
 -- parameter, to which it passes three continuations: passOn, resume,
@@ -77,6 +77,11 @@ trap f = callCC (\hk -> install (h hk))
                          then install hc' >>= hk >>= raise
                          else install hc  >>= hk >>= raise
                   in f x passOn resume continue
+
+catchC :: Monad m =>
+    ExceptionHandler o m
+    -> CPST (Excep o m ()) m (Excep o m ())
+    -> CPST (Excep o m ()) m (Excep o m ())
 
 -- catchC is the catching version of trap.  It catches exceptions from
 -- an expression, instead of from its continuation.

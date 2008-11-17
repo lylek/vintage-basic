@@ -17,7 +17,7 @@ tack m = capture (\_ -> m)
 
 handle :: Monad m => (o1 -> Bool) -> (o1 -> CPST o m o1) -> CPST o1 m o1
        -> CPST o m o1
-handle pred f = capture (\x -> if pred x then f x else return x)
+handle t f = capture (\x -> if t x then f x else return x)
 
 -- The outward (trapping) exception handlers --
 
@@ -31,7 +31,7 @@ tackAtEnd :: Monad m => CPST o m o -> CPST o m ()
 tackAtEnd m = captureAtEnd (\_ -> m)
 
 handleAtEnd :: Monad m => (o -> Bool) -> (o -> CPST o m o) -> CPST o m ()
-handleAtEnd pred f = captureAtEnd (\x -> if pred x then f x else return x)
+handleAtEnd t f = captureAtEnd (\x -> if t x then f x else return x)
 
 -- Some convenient aliases
 

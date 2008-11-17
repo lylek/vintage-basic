@@ -5,6 +5,7 @@ data Builtin =
     | RightBI | RndBI | SgnBI | SinBI | SpcBI | StrBI | SqrBI | TabBI | TanBI | ValBI
     deriving (Show,Eq)
 
+builtinToStrAssoc :: [(Builtin, String)]
 builtinToStrAssoc = [
     (AbsBI,   "ABS"   ),
     (AscBI,   "ASC"   ),
