@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -XRankNTypes -XFlexibleContexts #-}
 
 -- DurableTraps.hs
 -- Lyle Kopnicky

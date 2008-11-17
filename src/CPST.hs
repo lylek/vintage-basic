@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts -XUndecidableInstances #-}
+{-# OPTIONS_GHC -XRankNTypes -XFlexibleInstances -XMultiParamTypeClasses -XUndecidableInstances #-}
 
 -- CPST.hs
 -- A continuation-passing style monad transformer,

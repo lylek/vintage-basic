@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC #-}
 
 -- BasicParser.hs
 -- Parses BASIC source code to produce abstract syntax.

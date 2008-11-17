@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -XRank2Types -XFlexibleContexts #-}
 
 -- BasicMonad.hs
 -- This monad provides runtime support for variable assignment,

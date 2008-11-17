@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -XMultiParamTypeClasses -XFlexibleInstances #-}
 
 -- BasicFloatParser.hs
 -- Generic type class for parsing floats. Used both in parsing static code and at runtime
