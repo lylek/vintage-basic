@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XRankNTypes -XFlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, RankNTypes #-}
 
 -- DurableTraps.hs
 -- Lyle Kopnicky

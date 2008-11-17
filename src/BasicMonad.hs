@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XRank2Types -XFlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, Rank2Types #-}
 
 -- BasicMonad.hs
 -- This monad provides runtime support for variable assignment,

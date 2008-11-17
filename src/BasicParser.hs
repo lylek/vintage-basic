@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC #-}
-
 -- BasicParser.hs
 -- Parses BASIC source code to produce abstract syntax.
 -- Also used at runtime to input values.

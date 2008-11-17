@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC #-}
-
 -- BasicRuntimeParser.hs
 -- Parsing for DATA statements and input buffer
 -- Lyle Kopnicky

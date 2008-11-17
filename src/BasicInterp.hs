@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XParallelListComp -XFlexibleContexts -XRank2Types #-}
+{-# LANGUAGE FlexibleContexts, ParallelListComp, Rank2Types #-}
 
 -- BasicInterp.hs
 -- The heart of the interpreter, which uses the Basic monad.
