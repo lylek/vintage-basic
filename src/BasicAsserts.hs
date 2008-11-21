@@ -21,6 +21,10 @@ mkOutput = do
     output <- newIORef (BS.pack "")
     return $ IOStream output
 
+assertOutputEq output expected = do
+    got <- vGetContents output
+    assertEqual "Output not as expected" expected got
+
 assertTaggedParseResult normalizeError parser input expected =
     let normalizeResult taggedToks = [(sourceLine pos, sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
         assertParseResult normalizeError parser input normalizeResult expected
