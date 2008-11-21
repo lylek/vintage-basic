@@ -12,15 +12,15 @@ Description:
     the implementation uses monad transformers, including one
     with resumable exceptions that can caught by a program's
     continuation rather than its context.
-Category:      Compilers/Interpreters
-License:       BSD3
-License-File:  LICENSE.txt
-Author:        Lyle Kopnicky
-Maintainer:    lyle@vintage-basic.net
-Homepage:      http://www.vintage-basic.net
-Build-Type:    Simple
-Tested-With:   GHC==6.10.1
-Extra-Source-Files: src/*_test.hs src/run_test.hs examples/*.bas README.txt
+Category:           Compilers/Interpreters
+License:            BSD3
+License-File:       LICENSE.txt
+Author:             Lyle Kopnicky
+Maintainer:         lyle@vintage-basic.net
+Homepage:           http://www.vintage-basic.net
+Build-Type:         Simple
+Tested-With:        GHC==6.10.1
+Extra-Source-Files: src/*_test.hs src/BasicAsserts.hs src/run_test.hs examples/*.bas README.txt
 
 Executable vintbas
   Main-is:        Basic.hs
