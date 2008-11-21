@@ -5,51 +5,50 @@
 
 module BasicExecuter where
 
+import Control.Monad.State(get)
+import Control.Monad.Trans(liftIO)
 import Data.List(deleteFirstsBy,nubBy,sortBy)
-import System.Exit(exitFailure)
 import Text.ParserCombinators.Parsec(parse,setPosition,sourceLine)
-import Text.ParserCombinators.Parsec.Error(ParseError,errorPos,errorMessages,showErrorMessages)
 import BasicInterp(interpLines)
 import BasicLexCommon(Tagged(..))
 import BasicLineScanner(RawLine,rawLinesP)
-import BasicMonad(runProgram)
+import BasicMonad(BasicState(..),Code,printString,runProgram)
 import BasicParser(statementListP)
+import BasicResult(BasicResult(..))
 import BasicSyntax(Line(..))
 import BasicTokenizer(TokenizedLine,taggedTokensP)
+import DurableTraps(die)
 
-execute :: FilePath -> IO ()
-execute fileName = do
-    text <- readFile fileName
+executeFile :: FilePath -> Code ()
+executeFile fileName = do
+    text <- liftIO $ readFile fileName
+    execute fileName text
+
+execute :: FilePath -> String -> Code ()
+execute fileName text = do
     rawLines <- scanLines fileName text
     tokenizedLines <- sequence [tokenizeLine rawLine | rawLine <- rawLines]
     parsedLines <- sequence [parseLine tokenizedLine | tokenizedLine <- tokenizedLines]
-    runProgram $ interpLines parsedLines
+    state <- get
+    liftIO $ runProgram (inputStream state) (outputStream state) $ interpLines parsedLines
 
-scanLines :: String -> String -> IO [RawLine]
+scanLines :: String -> String -> Code [RawLine]
 scanLines fileName text =
     case parse rawLinesP fileName text of
-        (Left parseError) -> do
-            putStrLn $ showLineNumberingError parseError
-            exitFailure
-        (Right rawLines) -> sortNubLines rawLines
+        (Left parseError) -> die (ScanError parseError)
+        (Right rawLines)  -> sortNubLines rawLines
 
-tokenizeLine :: RawLine -> IO TokenizedLine
+tokenizeLine :: RawLine -> Code TokenizedLine
 tokenizeLine (Tagged pos text) =
     case parse (setPosition pos >> taggedTokensP) "" text of
-        (Left parseError) -> do
-            putStrLn ("!SYNTAX ERROR AT " ++ show parseError)
-            exitFailure
-        (Right taggedTokens) ->
-            return (Tagged pos taggedTokens)
+        (Left parseError)    -> die (SyntaxError parseError)
+        (Right taggedTokens) -> return (Tagged pos taggedTokens)
 
-parseLine :: TokenizedLine -> IO Line
+parseLine :: TokenizedLine -> Code Line
 parseLine (Tagged pos taggedTokens) = do
     case parse (setPosition pos >> statementListP) "" taggedTokens of
-        (Left parseError) -> do
-            putStrLn $ showSyntaxError parseError
-            exitFailure
-        (Right statementList) ->
-            return (Line (sourceLine pos) statementList)
+        (Left parseError)     -> die (SyntaxError parseError)
+        (Right statementList) -> return (Line (sourceLine pos) statementList)
 
 rawLineOrdering :: RawLine -> RawLine -> Ordering
 rawLineOrdering (Tagged pos1 _) (Tagged pos2 _) = compare (sourceLine pos1) (sourceLine pos2)
@@ -57,29 +56,14 @@ rawLineOrdering (Tagged pos1 _) (Tagged pos2 _) = compare (sourceLine pos1) (sou
 rawLinesEq :: RawLine -> RawLine -> Bool
 rawLinesEq l1 l2 = rawLineOrdering l1 l2 == EQ
 
--- This function reverses before nubbing so that later lines take precedence.
-sortNubLines :: [RawLine] -> IO [RawLine]
+-- | This function reverses before nubbing so that later lines take precedence.
+sortNubLines :: [RawLine] -> Code [RawLine]
 sortNubLines lineList = do
     let sortedLines = sortBy rawLineOrdering lineList
         reversedSortedLines = reverse sortedLines
         reversedNubbedLines = nubBy rawLinesEq reversedSortedLines
         nubbedLines = reverse reversedNubbedLines
         duplicateLines = deleteFirstsBy rawLinesEq lineList nubbedLines
-    sequence_ [putStrLn ("!SUPERSEDING PREVIOUS LINE " ++ show (sourceLine pos))
+    sequence_ [printString ("!SUPERSEDING PREVIOUS LINE " ++ show (sourceLine pos) ++ "\n")
         | (Tagged pos _) <- duplicateLines]
     return nubbedLines
-
-showParseError :: String -> String -> String -> ParseError -> String
-showParseError msgErrorType msgLine msgEndOfInput parseError =
-    let pos = errorPos parseError
-        messages = errorMessages parseError
-        line = sourceLine pos
-    in
-        "!" ++ msgErrorType ++ " ERROR IN " ++ msgLine ++ " " ++ show line
-        ++ showErrorMessages "OR" " UNKNOWN" " EXPECTING" " UNEXPECTED" msgEndOfInput messages
-
-showSyntaxError :: ParseError -> String
-showSyntaxError = showParseError "SYNTAX" "LINE" "END OF LINE"
-
-showLineNumberingError :: ParseError -> String
-showLineNumberingError = showParseError "LINE NUMBERING" "RAW LINE" "END OF FILE"

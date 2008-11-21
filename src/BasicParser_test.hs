@@ -1,11 +1,11 @@
 module BasicParser_test where
 
---import Data.List(isInfixOf)
 import Test.HUnit
 import Text.ParserCombinators.Parsec(parse)
 import Text.ParserCombinators.Parsec.Pos
 import BasicLexCommon(Tagged(..))
 import BasicParser
+import BasicResult
 import BasicSyntax
 import BasicTokenizer(taggedTokensP)
 
@@ -15,9 +15,9 @@ parserTest source expectedColAndStatements = TestCase $ do
   let (Right taggedToks) = parse taggedTokensP "" source
   let result = parse statementListP "" taggedToks
   case result of
-           (Left err) -> assertFailure ("parse error: " ++ show err)
-           (Right taggedStatements) ->
-               assertEqual "" expectedColAndStatements (map taggedValToColAndVal taggedStatements)
+      (Left err) -> assertFailure ("parse error: " ++ show (SyntaxError err))
+      (Right taggedStatements) ->
+          assertEqual "" expectedColAndStatements (map taggedValToColAndVal taggedStatements)
 
 test_parse = parserTest
     "GOTO12"

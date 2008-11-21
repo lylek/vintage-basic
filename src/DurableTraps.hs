@@ -7,18 +7,15 @@ module DurableTraps where
 
 import Control.Monad
 import CPST
-import ExceptionHandlers
+import ExceptionHandlers(capture,install,raise)
 
-class Eq o => ResultType o where
+class ResultType o where
     okValue :: o
 
-notOK :: ResultType a => a -> Bool
-notOK x = x /= okValue
-
--- A continuation
+-- | A continuation
 type Cont o m i = i -> CPST (Excep o m i) m (Excep o m i)
 
--- Packages a result type with a handler stack and a continuation
+-- | Packages a result type with a handler stack and a continuation
 data Excep o m i =
     Excep o
           (Excep o m i -> CPST (Excep o m i) m (Excep o m i))
@@ -27,7 +24,7 @@ data Excep o m i =
 -- i is the type to pass to the continuation (bound to the raise)
 -- both types must remain the same throughout your CPS computation
 
--- Packages the current continuation with the exception value,
+-- | Packages the current continuation with the exception value,
 -- and an empty handler stack
 raiseCC :: (Monad m, ResultType o) => o -> CPST (Excep o m i) m i
 raiseCC x = callCC (\k -> raise (Excep x return k))
@@ -39,7 +36,7 @@ type ExceptionHandler o m = Monad m => o -> ExceptionResumer o m -> ExceptionRes
 
 trap :: Monad m => ExceptionHandler o m -> CPST (Excep o m ()) m ()
 
--- This handler provides flexibility.  It takes a function 'f' as a
+-- | This handler provides flexibility.  It takes a function 'f' as a
 -- parameter, to which it passes three continuations: passOn, resume,
 -- and continue.
 --
@@ -78,13 +75,13 @@ trap f = callCC (\hk -> install (h hk))
                          else install hc  >>= hk >>= raise
                   in f x passOn resume continue
 
+-- | The catching version of trap.  It catches exceptions from
+-- an expression, instead of from its continuation.
+
 catchC :: Monad m =>
     ExceptionHandler o m
     -> CPST (Excep o m ()) m (Excep o m ())
     -> CPST (Excep o m ()) m (Excep o m ())
-
--- catchC is the catching version of trap.  It catches exceptions from
--- an expression, instead of from its continuation.
 
 catchC f m = callCC (\hk -> capture (h hk) m)
     where h hk (Excep x hc xk) =
@@ -104,15 +101,19 @@ catchC f m = callCC (\hk -> capture (h hk) m)
                          else install hc  >> hk (Excep x hc xk') >>= raise
                   in f x passOn resume continue
 
--- Like abort, ends in the middle.
+-- | Like abort, ends in the middle of a program.  Can be resumed.
 end :: (Monad m, ResultType o) => CPST (Excep o m i) m i
 end = raiseCC okValue
 
--- Needs to be added at the end of every do-sequence.  This returns OK
+-- | Needs to be added at the end of every do-sequence.  This returns OK
 -- with a continuation that just regenerates itself.  It is needed to make
 -- the types work out in the sequence.
 done :: (Monad m, ResultType o) => CPST (Excep o m i) m (Excep o m i)
 done = return (Excep okValue return (\_ -> done))
+
+-- | Raises an exception that can't be resumed, and can be used in any context.
+die :: (Monad m, ResultType o) => o -> CPST (Excep o m i) m a
+die x = raise (Excep x return (error "cannot resume from a die"))
 
 -- Untypable, since i = Cont o i.
 -- In other words, the continuation has to take itself as its argument.

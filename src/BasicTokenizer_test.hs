@@ -3,8 +3,11 @@ module BasicTokenizer_test where
 import Test.HUnit
 import BasicAsserts
 import BasicBuiltin(Builtin(..))
+import BasicResult
 import BasicLineScanner
 import BasicTokenizer(Token(..),taggedTokensP,printToken)
+
+assertTokenizerResult = assertColAndParseResult SyntaxError taggedTokensP
 
 test_taggedTokensP = TestCase $ do
   let source = [
@@ -40,22 +43,22 @@ test_taggedTokensP = TestCase $ do
               cols = scanl (+) 1 lens
               in zip cols toks
   let expectedColAndTokss = map accumLensWToks expectedLenAndTokss
-  sequence_ $ zipWith (assertColAndParseResult taggedTokensP) source expectedColAndTokss
+  sequence_ $ zipWith assertTokenizerResult source expectedColAndTokss
 
 test_capitalizes_lowercase_chars = TestCase $ do
    let source = "azAZ"
    let expected = [(1,CharTok 'A'), (2,CharTok 'Z'), (3,CharTok 'A'), (4, CharTok 'Z')]
-   assertColAndParseResult taggedTokensP source expected
+   assertTokenizerResult source expected
 
 test_eats_spaces_after_most_tokens_but_not_chars = TestCase $ do
    let source = "   ,   +  AND  ORX   YZ  "
    let expectedColAndToks = [(1,SpaceTok), (4,CommaTok), (8,PlusTok), (11,AndTok), (16,OrTok),
                              (18,CharTok 'X'), (19,SpaceTok), (22,CharTok 'Y'), (23,CharTok 'Z'),
                              (24,SpaceTok)]
-   assertColAndParseResult taggedTokensP source expectedColAndToks
+   assertTokenizerResult source expectedColAndToks
 
 test_reports_error_for_an_illegal_char = TestCase $ do
-   sequence_ [ assertParseError taggedTokensP [illegalChar] "expecting legal BASIC character"
+   sequence_ [ assertParseError SyntaxError taggedTokensP [illegalChar] "EXPECTING LEGAL BASIC CHARACTER"
                | illegalChar <- "~`!@#&_[]{}\\'\n\a" ]
 
 test_printToken = TestCase $ do

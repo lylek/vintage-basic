@@ -1,26 +1,44 @@
 module BasicAsserts where
 
+import qualified Data.ByteString.Char8 as BS
+import Data.IORef
 import Data.List(isInfixOf)
 import Test.HUnit
 import Text.ParserCombinators.Parsec(parse,sourceLine,sourceColumn)
 import BasicLexCommon
+import IOStream
 
-assertTaggedParseResult parser input expected =
-    let normalize taggedToks = [(sourceLine pos, sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
-        assertParseResult parser input normalize expected
+mkInput :: String -> IO IOStream
+mkInput s = do
+    input <- newIORef (BS.pack s)
+    return $ IOStream input
 
-assertColAndParseResult parser input expected =
-    let normalize taggedToks = [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
-        assertParseResult parser input normalize expected
+noInput :: IO IOStream
+noInput = mkInput ""
 
-assertParseResult parser inputText normalize expected = do
+mkOutput :: IO IOStream
+mkOutput = do
+    output <- newIORef (BS.pack "")
+    return $ IOStream output
+
+assertTaggedParseResult normalizeError parser input expected =
+    let normalizeResult taggedToks = [(sourceLine pos, sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
+        assertParseResult normalizeError parser input normalizeResult expected
+
+assertColAndParseResult normalizeError parser input expected =
+    let normalizeResult taggedToks = [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
+        assertParseResult normalizeError parser input normalizeResult expected
+
+assertParseResult normalizeError parser inputText normalizeResult expected = do
     case parse parser "" inputText of
-        (Left err) -> assertFailure ("Parse error: " ++ show err)
-        (Right rls) -> assertEqual "Parse result not as expected" expected (normalize rls)
+        (Left err) -> assertFailure ("Parse error: " ++ show (normalizeError err))
+        (Right rls) -> assertEqual "Parse result not as expected" expected (normalizeResult rls)
 
-assertParseError parser inputText expectedError = do
+assertParseError normalizeError parser inputText expectedError = do
     case parse parser "" inputText of
-        (Left err) -> assertBool ("Parser reported wrong error: " ++ show err) (isInfixOf expectedError (show err))
+        (Left err) -> assertBool
+            ("Parser reported wrong error: " ++ show (normalizeError err))
+            (isInfixOf expectedError (show (normalizeError err)))
         (Right rls) -> assertFailure "Parser didn't report error"
 
 assertIOError code expectedError = do

@@ -97,13 +97,13 @@ liftSVBOp2 f (StringVal v1) (StringVal v2) = return $ boolToVal $ f v1 v2
 liftSVBOp2 _ _             _               = typeMismatch
 
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work
-valError :: String -> Code Val
-valError s = basicError s >> return (FloatVal 0)
+valError :: RuntimeError -> Code Val
+valError err = runtimeError err >> return (FloatVal 0)
 
 typeMismatch, invalidArgument, divisionByZero :: Code Val
-typeMismatch = valError "!TYPE MISMATCH IN EXPRESSION"
-invalidArgument = valError "!INVALID ARGUMENT"
-divisionByZero = valError "!DIVISION BY ZERO"
+typeMismatch    = valError TypeMismatchError
+invalidArgument = valError InvalidArgumentError
+divisionByZero  = valError DivisionByZeroError
 
 eval :: Expr -> Code Val
 eval (LitX (FloatLit v)) = return (FloatVal v)
@@ -280,16 +280,16 @@ interpS _ (InputS mPrompt vars) = do
 
 interpS jumpTable (GotoS lab) = do
     let maybeCode = programLookup jumpTable lab
-    assert (isJust maybeCode) ("!BAD GOTO TARGET: " ++ show lab)
+    assert (isJust maybeCode) (BadGotoTargetError lab)
     fromJust maybeCode >> end
 
-interpS jumpTable (OnGotoS x labs) = interpComputed jumpTable "GOTO" GotoS x labs
+interpS jumpTable (OnGotoS x labs) = interpComputed jumpTable GotoS x labs
 
-interpS jumpTable (OnGosubS x labs) = interpComputed jumpTable "GOSUB" GosubS x labs
+interpS jumpTable (OnGosubS x labs) = interpComputed jumpTable GosubS x labs
 
 interpS jumpTable (IfS x sts) = do
     v <- eval x
-    fv <- extractFloatOrFail "!TYPE MISMATCH IN IF" v
+    fv <- extractFloatOrFail TypeMismatchError v
     if fv == 0
         then return ()
         else mapM_ (interpTS jumpTable) sts
@@ -300,12 +300,12 @@ interpS jumpTable (IfS x sts) = do
 -- the loop - it is undecidable.
 interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
     v1 <- eval x1
-    _ <- extractFloatOrFail "!TYPE MISMATCH IN FOR (INIT)" v1
+    _ <- extractFloatOrFail TypeMismatchError v1
     setScalarVar control v1
     v2 <- eval x2
-    lim <- extractFloatOrFail "!TYPE MISMATCH IN FOR (TO)" v2
+    lim <- extractFloatOrFail TypeMismatchError v2
     v3 <- eval x3
-    step <- extractFloatOrFail "!TYPE MISMATCH IN FOR EXPR (STEP)" v3
+    step <- extractFloatOrFail TypeMismatchError v3
     trap $ \ x passOn resume continue ->
         if isNext x || isNextVar control x
             then do
@@ -317,14 +317,14 @@ interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
                     then continue True
                     else resume False
             else passOn True
-interpS _ (ForS _ _ _ _) = basicError "!TYPE MISMATCH IN FOR (VAR)"
+interpS _ (ForS _ _ _ _) = runtimeError TypeMismatchError
 
 interpS _ (NextS Nothing) = raiseCC (Next Nothing)
 interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 
 interpS jumpTable (GosubS lab) =
     do let maybeCode = programLookup jumpTable lab
-       assert (isJust maybeCode) ("!BAD GOSUB TARGET: " ++ show lab)
+       assert (isJust maybeCode) (BadGosubTargetError lab)
        catchC gosubHandler (fromJust maybeCode)
        return ()
 interpS _ ReturnS = raiseCC Return
@@ -335,7 +335,7 @@ interpS jumpTable (RestoreS maybeLab) = do
    case maybeLab of
        (Just lab) -> case dataLookup jumpTable lab of
            (Just ds) -> setDataStrings ds
-           Nothing -> basicError ("!BAD RESTORE TARGET: " ++ show lab)
+           Nothing -> runtimeError (BadRestoreTargetError lab)
        Nothing -> if null jumpTable
            then return ()
            else setDataStrings (jtData (head jumpTable))
@@ -347,7 +347,7 @@ interpS _ (DataS _) = return ()
 interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
     assert
         (and [typeOf p == typeOf v | p <- params | v <- vals])
-        "!TYPE MISMATCH IN FN"
+        TypeMismatchError
     stashedVals <- mapM getScalarVar params
     sequence_ $ zipWith setScalarVar params vals
     result <- eval expr
@@ -357,10 +357,10 @@ interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
 gosubHandler :: BasicExceptionHandler
 gosubHandler x passOn _ continue = if isReturn x then continue False else passOn True
 
-interpComputed :: JumpTable -> String -> (Label -> Statement) -> Expr -> [Label] -> Code ()
-interpComputed jumpTable desc cons x labs = do
+interpComputed :: JumpTable -> (Label -> Statement) -> Expr -> [Label] -> Code ()
+interpComputed jumpTable cons x labs = do
     v <- eval x
-    fv <- extractFloatOrFail ("!TYPE MISMATCH IN ON-" ++ desc) v
+    fv <- extractFloatOrFail TypeMismatchError v
     let i = floatToInt fv
     if i > 0 && i <= length labs
         then do
@@ -371,7 +371,7 @@ interpComputed jumpTable desc cons x labs = do
 
 interpNextVar :: VarName -> Code ()
 interpNextVar (VarName FloatType v) = raiseCC (Next (Just v))
-interpNextVar _ = basicError "!TYPE MISMATCH IN NEXT"
+interpNextVar _ = runtimeError TypeMismatchError
 
 inputVars :: [Var] -> Code ()
 inputVars vars = do
@@ -409,7 +409,7 @@ interpRead :: Var -> Code ()
 interpRead var = do
     s <- readData
     case checkInput var s of
-        Nothing -> basicError "!TYPE MISMATCH IN READ"
+        Nothing -> runtimeError TypeMismatchError
         (Just val) -> setVar var val
 
 getVar :: Var -> Code Val
@@ -432,10 +432,10 @@ setVar (ArrVar vn xs) val = do
 
 coerce :: Typeable a => a -> Val -> Code Val
 coerce var val = case (typeOf var, val) of
-    (IntType,    (FloatVal fv))  -> return $ IntVal (floatToInt fv)
-    (FloatType,  (FloatVal _ ))  -> return val
+    (IntType,    (FloatVal fv)) -> return $ IntVal (floatToInt fv)
+    (FloatType,  (FloatVal _ )) -> return val
     (StringType, (StringVal _)) -> return val
-    (_,          _)              -> basicError "!TYPE MISMATCH IN LET" >> return val
+    (_,          _)             -> typeMismatch
 
 interpDim :: (VarName, [Expr]) -> Code ()
 interpDim (vn, xs) = do
@@ -448,8 +448,8 @@ interpDim (vn, xs) = do
 
 checkArrInds :: [Val] -> Basic (BasicExcep BasicResult ()) [Int]
 checkArrInds indVals = do
-    indFs <- mapM (extractFloatOrFail "!ARRAY DIMS MUST BE NUMBERS") indVals
-    assert (and (map (>=0) indFs)) ("!NEGATIVE ARRAY DIMS")
+    indFs <- mapM (extractFloatOrFail TypeMismatchError) indVals
+    assert (and (map (>=0) indFs)) NegativeArrayDimError
     let inds = map floatToInt indFs -- round dimensions as per standard
     return inds
 

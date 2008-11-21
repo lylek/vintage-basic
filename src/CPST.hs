@@ -1,20 +1,16 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, RankNTypes, UndecidableInstances #-}
 
--- CPST.hs
--- A continuation-passing style monad transformer,
--- providing partial continuations.
--- Lyle Kopnicky
-
 -- Question: can other monad transformers be layered on top of this one,
 -- while retaining 'shift' and 'reset'?
 
+-- | A continuation-passing style monad transformer, providing partial continuations.
 module CPST where
 
 import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Trans
 
--- Definition of the CPST (continuation-passing style) monad --
-
+-- | Definition of the CPST (continuation-passing style) monad.
 newtype Monad m => CPST o m i =
       CPST { unCPST :: (i -> m o) -> m o }
 
@@ -25,8 +21,9 @@ instance Monad m => Monad (CPST o m) where
       return x = CPST (\k -> k x)
       (CPST m') >>= f = CPST (\k -> m' (\x -> unCPST (f x) k))
 
--- The basic monad utilities: runCPS, lift, liftIO --
+-- The basic monad utilities: runCPST, lift, liftIO
 
+-- | Runs code in the CPST monad.
 runCPST :: Monad m => CPST o m o -> m o
 runCPST (CPST m') = m' return
 
@@ -39,30 +36,30 @@ instance (MonadIO m) => MonadIO (CPST o m) where
 -- The core morphisms of CPST: shift, reset --
 
 shift :: Monad m => ((forall a. i -> CPST a m o) -> CPST o m o) -> CPST o m i
--- Captures a partial continuation out to the nearest enclosing 'reset'.
+-- ^ Captures a partial continuation out to the nearest enclosing 'reset'.
 -- The rank-3 polymorphism permits the partial continuation to be used
 -- in multiple differing type contexts.
 shift f = CPST (\k -> runCPST (f (\x -> CPST (\k' -> k x >>= k'))))
 
 reset :: Monad m => CPST i m i -> CPST o m i
 reset m = CPST (\k -> do x <- runCPST m; k x)
--- reset m = CPST (runCPST m >>=)
+-- ALTERNATELY: reset m = CPST (runCPST m >>=)
 
 -- Other morphisms written in terms of shift & reset, without unwrapping
 -- the monad.
 
 abort :: Monad m => o -> CPST o m a
---abort x = CPST (\_ -> return x)
 abort x = shift (\_ -> return x)
+-- ALTERNATELY: abort x = CPST (\_ -> return x)
 
 callCC :: Monad m => ((forall a. i -> CPST o m a) -> CPST o m i) -> CPST o m i
--- Transforms real continuation into a CPS-level continuation,
--- passes it into f.  Now rank-3 polymorphic (compile with ghc),
+-- ^ Transforms a real continuation into a CPS-level continuation,
+-- passes it into f.  The type is rank-3 polymorphic,
 -- which permits the same continuation to be used in different
 -- type contexts.  This is OK since invoking the continuation
 -- disposes of the context.
---callCC f = CPST (\k -> unCPST (f (\x -> CPST (\_ -> k x))) k)
 callCC f = shift (\k -> (f (\x -> k x >>= abort)) >>= k)
+-- ALTERNATELY: callCC f = CPST (\k -> unCPST (f (\x -> CPST (\_ -> k x))) k)
 
 instance MonadReader r m => MonadReader r (CPST o m) where
     ask = lift ask

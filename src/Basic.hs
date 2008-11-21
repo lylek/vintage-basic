@@ -1,7 +1,13 @@
 import System.Environment(getArgs)
-import BasicExecuter(execute)
+import System.IO
+import BasicExecuter(executeFile)
+import BasicMonad(runProgram)
+import DurableTraps(done)
+import IOStream
 
 main :: IO ()
 main = do
     args <- getArgs
-    sequence_ [execute fileName | fileName <- args]
+    runProgram (IOStream stdin) (IOStream stdout) $ do
+        sequence_ [executeFile fileName | fileName <- args]
+        done

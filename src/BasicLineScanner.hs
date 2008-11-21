@@ -19,7 +19,7 @@ rawLineP = do
     n <- labelP
     whiteSpace
     pos <- getPosition
-    s <- manyTill (anyChar <?> "CHARACTER") newline
+    s <- manyTill (anyChar <?> "CHARACTER") (newline <?> "NEW-LINE")
     whiteSpace
     many blankLineP
     return (Tagged (setSourceLine pos n) s)

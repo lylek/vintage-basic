@@ -346,7 +346,7 @@ statementListP :: TokParser [Tagged Statement]
 statementListP = do
     many (tokenP (==ColonTok))
     sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
-    eol <?> ": or END OF LINE"
+    eol <?> ": OR END OF LINE"
     return sl
 
 anyTokenP :: TokParser (Tagged Token)
