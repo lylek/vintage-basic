@@ -3,7 +3,7 @@
 -- Also used at runtime to input values.
 -- Lyle Kopnicky
 
-module BasicParser(statementListP) where
+module BasicParser(exprP,statementListP) where
 
 import Data.Char
 import Text.ParserCombinators.Parsec
@@ -281,6 +281,11 @@ endSP =
     do tokenP (==EndTok)
        return EndS
 
+stopSP :: TokParser Statement
+stopSP =
+    do tokenP (==StopTok)
+       return StopS
+
 arrDeclP :: TokParser (VarName, [Expr])
 arrDeclP = do
     vn <- varNameP
@@ -338,8 +343,8 @@ statementP = do
     input <- getInput
     let pos = getPosTag (head input)
     st <- choice [printSP, inputSP, gotoSP, gosubSP, returnSP, onGotoSP, onGosubSP,
-        ifSP, forSP, nextSP, endSP, randomizeSP, dimSP, readSP, restoreSP, dataSP, remSP,
-        defFnSP, letSP]
+        ifSP, forSP, nextSP, endSP, stopSP, randomizeSP, dimSP, readSP, restoreSP, dataSP,
+        remSP, defFnSP, letSP]
     return (Tagged pos st)
 
 statementListP :: TokParser [Tagged Statement]

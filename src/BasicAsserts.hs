@@ -4,7 +4,7 @@ import qualified Data.ByteString.Char8 as BS
 import Data.IORef
 import Data.List(isInfixOf)
 import Test.HUnit
-import Text.ParserCombinators.Parsec(parse,sourceLine,sourceColumn)
+import Text.ParserCombinators.Parsec(eof,parse,sourceLine,sourceColumn,(<?>))
 import BasicLexCommon
 import IOStream
 
@@ -25,25 +25,26 @@ assertOutputEq output expected = do
     got <- vGetContents output
     assertEqual "Output not as expected" expected got
 
-assertTaggedParseResult normalizeError parser input expected =
-    let normalizeResult taggedToks = [(sourceLine pos, sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
-        assertParseResult normalizeError parser input normalizeResult expected
+withCol taggedToks = [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks]
 
-assertColAndParseResult normalizeError parser input expected =
-    let normalizeResult taggedToks = [(sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks] in
-        assertParseResult normalizeError parser input normalizeResult expected
+withLineAndCol taggedToks = [(sourceLine pos, sourceColumn pos, tok) | (Tagged pos tok) <- taggedToks]
 
-assertParseResult normalizeError parser inputText normalizeResult expected = do
-    case parse parser "" inputText of
+parserWithEof parser = do
+    result <- parser
+    eof <?> "END OF INPUT"
+    return result
+
+assertParseResult normalizeResult normalizeError parser input expected = do
+    case parse (parserWithEof parser) "" input of
         (Left err) -> assertFailure ("Parse error: " ++ show (normalizeError err))
         (Right rls) -> assertEqual "Parse result not as expected" expected (normalizeResult rls)
 
-assertParseError normalizeError parser inputText expectedError = do
-    case parse parser "" inputText of
+assertParseError normalizeResult normalizeError parser input expected = do
+    case parse (parserWithEof parser) "" input of
         (Left err) -> assertBool
-            ("Parser reported wrong error: " ++ show (normalizeError err))
-            (isInfixOf expectedError (show (normalizeError err)))
-        (Right rls) -> assertFailure "Parser didn't report error"
+            ("Parser reported wrong error.\n\nGot:\n" ++ show (normalizeError err) ++ "\n\nExpected error to contain:\n" ++ expected)
+            (isInfixOf expected (show (normalizeError err)))
+        (Right rls) -> assertFailure ("Parser didn't report error, instead got result: " ++ show (normalizeResult rls))
 
 assertIOError code expectedError = do
     catch
