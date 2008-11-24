@@ -7,7 +7,8 @@ import BasicResult
 import BasicLineScanner
 import BasicTokenizer(Token(..),taggedTokensP,printToken)
 
-assertTokenizerResult = assertColAndParseResult SyntaxError taggedTokensP
+assertTokenizerResult = assertParseResult withCol SyntaxError taggedTokensP
+assertTokenizerError  = assertParseError  withCol SyntaxError taggedTokensP
 
 test_taggedTokensP = TestCase $ do
   let source = [
@@ -58,7 +59,7 @@ test_eats_spaces_after_most_tokens_but_not_chars = TestCase $ do
    assertTokenizerResult source expectedColAndToks
 
 test_reports_error_for_an_illegal_char = TestCase $ do
-   sequence_ [ assertParseError SyntaxError taggedTokensP [illegalChar] "EXPECTING LEGAL BASIC CHARACTER"
+   sequence_ [ assertTokenizerError [illegalChar] "EXPECTING LEGAL BASIC CHARACTER"
                | illegalChar <- "~`!@#&_[]{}\\'\n\a" ]
 
 test_printToken = TestCase $ do
