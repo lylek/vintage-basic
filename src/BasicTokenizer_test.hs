@@ -13,9 +13,9 @@ assertTokenizerError  = assertParseError  withCol SyntaxError taggedTokensP
 test_taggedTokensP = TestCase $ do
   let source = [
                 ",:;()$%=<><=>=><+-*/^.?",
-                "ABSASCCHR$COSEXPINTLEFT$LENLOGMID$RIGHT$RNDSGNSPCSQRSTR$TABTANVAL",
+                "ABSASCCHR$COSEXPINTLEFT$LENLOGMID$RIGHT$RNDSGNSINSPCSQRSTR$TABTANVAL",
                 "ANDORNOTLETDIMONGOSUBRETURNIFTHENFORTOSTEPNEXTPRINTINPUT",
-                "RANDOMIZEREADRESTOREDEFFNEND",
+                "RANDOMIZEREADRESTOREDEFFNENDSTOP",
                 "\"hello\"REMGOFORTH\"ANDREAD\"",
                 "XDATATODATA"
                ]
@@ -28,14 +28,14 @@ test_taggedTokensP = TestCase $ do
                          (3,BuiltinTok CosBI), (3,BuiltinTok ExpBI), (3,BuiltinTok IntBI),
                          (5,BuiltinTok LeftBI), (3,BuiltinTok LenBI), (3,BuiltinTok LogBI),
                          (4,BuiltinTok MidBI), (6,BuiltinTok RightBI), (3,BuiltinTok RndBI),
-                         (3,BuiltinTok SgnBI), (3,BuiltinTok SpcBI), (3,BuiltinTok SqrBI),
-                         (4,BuiltinTok StrBI), (3,BuiltinTok TabBI), (3,BuiltinTok TanBI),
-                         (3,BuiltinTok ValBI)],
+                         (3,BuiltinTok SgnBI), (3,BuiltinTok SinBI), (3,BuiltinTok SpcBI),
+                         (3,BuiltinTok SqrBI), (4,BuiltinTok StrBI), (3,BuiltinTok TabBI),
+                         (3,BuiltinTok TanBI), (3,BuiltinTok ValBI)],
                         [(3,AndTok), (2,OrTok), (3,NotTok), (3,LetTok), (3,DimTok), (2,OnTok),
                          (2,GoTok), (3,SubTok), (6,ReturnTok), (2,IfTok), (4,ThenTok), (3,ForTok),
                          (2,ToTok), (4,StepTok), (4,NextTok), (5,PrintTok), (5,InputTok)],
                         [(9,RandomizeTok), (4,ReadTok), (7,RestoreTok), (3,DefTok), (2,FnTok),
-                         (3,EndTok)],
+                         (3,EndTok), (4,StopTok)],
                         [(7,StringTok "hello"), (19,RemTok "GOFORTH\"ANDREAD\"")],
                         [(1,CharTok 'X'), (10,DataTok "TODATA")]
                        ]
