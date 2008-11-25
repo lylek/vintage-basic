@@ -91,17 +91,20 @@ runBasic inputHandle outputHandle m = do
     runStateT (runReaderT (runCPST m) store) state
 
 assert :: Bool -> RuntimeError -> Code ()
-assert cond err = if cond then return () else runtimeError err
+assert cond err = if cond then return () else raiseRuntimeError err
 
-runtimeError :: RuntimeError -> Code ()
-runtimeError err = do
+raiseRuntimeException :: RuntimeException -> Code ()
+raiseRuntimeException rte = do
     state <- get
-    raiseCC (RuntimeError (lineNumber state) err)
+    raiseCC (LabeledRuntimeException (lineNumber state) rte)
     return ()
+
+raiseRuntimeError :: RuntimeError -> Code ()
+raiseRuntimeError err = raiseRuntimeException (RuntimeError err)
 
 extractFloatOrFail :: RuntimeError -> Val -> Code Float
 extractFloatOrFail _   (FloatVal fv) = return fv
-extractFloatOrFail err _             = runtimeError err >> return 0
+extractFloatOrFail err _             = raiseRuntimeError err >> return 0
 
 getScalarVar :: VarName -> Basic o Val
 getScalarVar vn = do

@@ -1,5 +1,5 @@
 -- | Results of BASIC computations, including errors.
-module BasicResult(BasicResult(..),RuntimeError(..)) where
+module BasicResult(BasicResult(..),RuntimeException(..),RuntimeError(..)) where
 
 import Text.ParserCombinators.Parsec(sourceLine,sourceColumn)
 import Text.ParserCombinators.Parsec.Error(ParseError,errorMessages,errorPos,showErrorMessages)
@@ -11,7 +11,13 @@ data BasicResult =
     Pass
     | ScanError ParseError
     | SyntaxError ParseError
-    | RuntimeError Label RuntimeError
+    | LabeledRuntimeException Label RuntimeException
+
+instance ResultType BasicResult where
+    okValue = Pass
+
+data RuntimeException =
+    RuntimeError RuntimeError
     | Next (Maybe String)
     | Return
     | Suspend
@@ -20,7 +26,10 @@ instance Show BasicResult where
     show Pass = "NORMAL TERMINATION"
     show (ScanError pe) = showParseError "LINE NUMBERING" "RAW LINE" "END OF FILE" pe
     show (SyntaxError pe) = showParseError "SYNTAX" "LINE" "END OF LINE" pe
-    show (RuntimeError label err) = show err ++ " IN LINE " ++ (show label)
+    show (LabeledRuntimeException label x) = show x ++ " IN LINE " ++ show label
+
+instance Show RuntimeException where
+    show (RuntimeError err) = show err
     show (Next Nothing) = "!NEXT WITHOUT FOR ERROR"
     show (Next (Just s)) = "!NEXT WITHOUT FOR ERROR (VAR "++s++")"
     show Return = "!RETURN WITHOUT GOSUB ERROR"

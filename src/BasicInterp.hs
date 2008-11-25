@@ -61,15 +61,15 @@ boolToVal :: Bool -> Val
 boolToVal t = if t then FloatVal (-1) else FloatVal 0
 
 isNext :: BasicResult -> Bool
-isNext (Next Nothing) = True
+isNext (LabeledRuntimeException _ (Next Nothing)) = True
 isNext _ = False
 
 isNextVar :: VarName -> BasicResult -> Bool
-isNextVar (VarName FloatType v1) (Next (Just v2)) = v1==v2
+isNextVar (VarName FloatType v1) (LabeledRuntimeException _ (Next (Just v2))) = v1==v2
 isNextVar _ _ = False
 
 isReturn :: BasicResult -> Bool
-isReturn Return = True
+isReturn (LabeledRuntimeException _ Return) = True
 isReturn _ = False
 
 liftFVOp1 :: (Float -> Float) -> Val -> Code Val
@@ -98,7 +98,7 @@ liftSVBOp2 _ _             _               = typeMismatch
 
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work
 valError :: RuntimeError -> Code Val
-valError err = runtimeError err >> return (FloatVal 0)
+valError err = raiseRuntimeError err >> return (FloatVal 0)
 
 typeMismatch, invalidArgument, divisionByZero :: Code Val
 typeMismatch    = valError TypeMismatchError
@@ -261,6 +261,8 @@ interpS _ (RemS _) = return ()
 
 interpS _ EndS = end
 
+interpS _ StopS = raiseRuntimeException Suspend
+
 interpS _ (DimS arrs) = mapM_ interpDim arrs
 
 interpS _ (LetS var x) = do
@@ -317,9 +319,9 @@ interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
                     then continue True
                     else resume False
             else passOn True
-interpS _ (ForS _ _ _ _) = runtimeError TypeMismatchError
+interpS _ (ForS _ _ _ _) = raiseRuntimeError TypeMismatchError
 
-interpS _ (NextS Nothing) = raiseCC (Next Nothing)
+interpS _ (NextS Nothing) = raiseRuntimeException (Next Nothing)
 interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 
 interpS jumpTable (GosubS lab) =
@@ -327,7 +329,7 @@ interpS jumpTable (GosubS lab) =
        assert (isJust maybeCode) (BadGosubTargetError lab)
        catchC gosubHandler (fromJust maybeCode)
        return ()
-interpS _ ReturnS = raiseCC Return
+interpS _ ReturnS = raiseRuntimeException Return
 
 interpS _ RandomizeS = seedRandomFromTime
 
@@ -335,7 +337,7 @@ interpS jumpTable (RestoreS maybeLab) = do
    case maybeLab of
        (Just lab) -> case dataLookup jumpTable lab of
            (Just ds) -> setDataStrings ds
-           Nothing -> runtimeError (BadRestoreTargetError lab)
+           Nothing -> raiseRuntimeError (BadRestoreTargetError lab)
        Nothing -> if null jumpTable
            then return ()
            else setDataStrings (jtData (head jumpTable))
@@ -370,8 +372,8 @@ interpComputed jumpTable cons x labs = do
             return ()
 
 interpNextVar :: VarName -> Code ()
-interpNextVar (VarName FloatType v) = raiseCC (Next (Just v))
-interpNextVar _ = runtimeError TypeMismatchError
+interpNextVar (VarName FloatType v) = raiseRuntimeException (Next (Just v))
+interpNextVar _ = raiseRuntimeError TypeMismatchError
 
 inputVars :: [Var] -> Code ()
 inputVars vars = do
@@ -409,7 +411,7 @@ interpRead :: Var -> Code ()
 interpRead var = do
     s <- readData
     case checkInput var s of
-        Nothing -> runtimeError TypeMismatchError
+        Nothing -> raiseRuntimeError TypeMismatchError
         (Just val) -> setVar var val
 
 getVar :: Var -> Code Val
