@@ -33,10 +33,7 @@ instance Show RuntimeException where
     show (Next Nothing) = "!NEXT WITHOUT FOR ERROR"
     show (Next (Just s)) = "!NEXT WITHOUT FOR ERROR (VAR "++s++")"
     show Return = "!RETURN WITHOUT GOSUB ERROR"
-    show Suspend = "PROGRAM SUSPENDED"
-
-instance ResultType BasicResult where
-    okValue = Pass
+    show Suspend = "!BREAK"
 
 data RuntimeError =
     TypeMismatchError

@@ -89,6 +89,7 @@ printStatement (InputS prompt vs) =
     "INPUT " ++ (case prompt of Nothing -> ""; Just ps -> show ps ++ ";")
          ++ (concat $ intersperse "," (map printVar vs))
 printStatement EndS = "END"
+printStatement StopS = "STOP"
 printStatement RandomizeS = "RANDOMIZE"
 printStatement (ReadS vars) = "READ " ++ (concat (intersperse ", " (map printVar vars)))
 printStatement (RestoreS Nothing) = "RESTORE"

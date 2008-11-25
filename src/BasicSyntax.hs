@@ -71,6 +71,7 @@ data Statement =
   | PrintS [Expr] Bool -- True if should print newline
   | InputS (Maybe String) [Var]
   | EndS
+  | StopS
   | RandomizeS
   | ReadS [Var]
   | RestoreS (Maybe Label)
