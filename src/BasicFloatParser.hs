@@ -53,7 +53,7 @@ instance BasicFloatParser Char st where
     dotP   = char '.'
     plusP  = char '+'
     minusP = char '-'
-    charEP = char 'E'
+    charEP = char 'E' <|> char 'e'
 
 instance BasicFloatParser (Tagged Token) () where
     digitP = do tok <- tokenP (charTokTest isDigit)
