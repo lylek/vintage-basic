@@ -21,6 +21,7 @@ builtinToStrAssoc = [
     (RightBI, "RIGHT$"),
     (RndBI,   "RND"   ),
     (SgnBI,   "SGN"   ),
+    (SinBI,   "SIN"   ),
     (SpcBI,   "SPC"   ),
     (StrBI,   "STR$"  ),
     (SqrBI,   "SQR"   ),
