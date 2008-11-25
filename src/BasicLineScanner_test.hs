@@ -5,8 +5,8 @@ import BasicAsserts
 import BasicLineScanner
 import BasicResult
 
-assertRawParseResult text = assertTaggedParseResult ScanError rawLinesP text
-assertRawParseError = assertParseError ScanError rawLinesP
+assertRawParseResult = assertParseResult withLineAndCol ScanError rawLinesP
+assertRawParseError  = assertParseError  withLineAndCol ScanError rawLinesP
 
 test_LineScanner = TestCase $ do
   let text = unlines ["10SKDJF@#"," 5   ASJDKFdf "]
