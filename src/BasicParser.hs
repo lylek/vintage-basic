@@ -29,6 +29,7 @@ skipSpace = skipMany $ tokenP (==SpaceTok)
 lineNumP :: TokParser Int
 lineNumP =
     do s <- many1 (tokenP (charTokTest isDigit) <?> "") <?> "LINE NUMBER"
+       skipSpace
        return (read (map (getCharTokChar . getTaggedVal) s))
 
 -- LITERALS

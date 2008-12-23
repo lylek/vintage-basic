@@ -2,7 +2,7 @@
 -- Parsing for DATA statements and input buffer
 -- Lyle Kopnicky
 
-module BasicRuntimeParser(dataValsP,readFloat) where
+module BasicRuntimeParser(dataValsP,readFloat,trim) where
 
 import Text.ParserCombinators.Parsec
 import BasicFloatParser
@@ -20,15 +20,16 @@ stringP :: Parser String
 stringP =
     do char '"'
        s <- manyTill anyChar (char '"')
+       spaces
        return s
 
 trim :: String -> String
 trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
 
 dataValP :: Parser String
-dataValP =
-    do s <- stringP <|> many nonCommaP
-       return (trim s)
+dataValP = do
+    spaces
+    stringP <|> do { s <- many nonCommaP; return (trim s) }
 
 dataValsP :: Parser [String]
 dataValsP = sepBy1 dataValP (char ',')

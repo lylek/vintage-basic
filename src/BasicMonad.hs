@@ -201,6 +201,7 @@ printString s = do
 endCol :: Int -> String -> Int    
 endCol startCol "" = startCol
 endCol _ ('\n' : s) = endCol 0 s
+endCol _ ('\r' : s) = endCol 0 s
 endCol startCol (_ : s) = endCol (startCol + 1) s
 
 getOutputColumn :: Code Int
@@ -208,12 +209,13 @@ getOutputColumn = do
     state <- get
     return $ outputColumn state
 
-getString :: Basic o String
+getString :: Code String
 getString = do
     state <- get
-    liftIO $ do
-        vFlush (outputStream state)
-        vGetLine (inputStream state)
+    liftIO $ vFlush (outputStream state)
+    eof <- liftIO $ vIsEOF (inputStream state)
+    assert (not eof) EndOfInputError
+    liftIO $ vGetLine (inputStream state)
 
 secondsSinceMidnight :: Code Int
 secondsSinceMidnight = do

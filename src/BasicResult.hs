@@ -37,6 +37,7 @@ instance Show RuntimeException where
 
 data RuntimeError =
     TypeMismatchError
+    | WrongNumberOfArgumentsError
     | InvalidArgumentError
     | DivisionByZeroError
     | BadGotoTargetError Label
@@ -48,10 +49,12 @@ data RuntimeError =
     | OutOfArrayBoundsError
     | UndefinedFunctionError VarName
     | OutOfDataError
+    | EndOfInputError
   deriving Eq
 
 instance Show RuntimeError where
     show TypeMismatchError = "!TYPE MISMATCH"
+    show WrongNumberOfArgumentsError = "!WRONG NUMBER OF ARGUMENTS"
     show InvalidArgumentError = "!INVALID ARGUMENT"
     show DivisionByZeroError = "!DIVISION BY ZERO"
     show (BadGotoTargetError lab) = "!BAD GOTO TARGET " ++ show lab
@@ -63,6 +66,7 @@ instance Show RuntimeError where
     show OutOfArrayBoundsError = "!OUT OF ARRAY BOUNDS"
     show (UndefinedFunctionError vn) = "!UNDEFINED FUNCTION " ++ printVarName vn
     show OutOfDataError = "!OUT OF DATA"
+    show EndOfInputError = "!END OF INPUT"
 
 showParseError :: String -> String -> String -> ParseError -> String
 showParseError msgErrorType msgLine msgEndOfInput parseError =

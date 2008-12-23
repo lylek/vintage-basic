@@ -4,6 +4,7 @@
 
 module BasicPrinter where
 
+import Numeric
 import Data.List
 import BasicLexCommon
 import BasicSyntax
@@ -17,6 +18,41 @@ printLit (FloatLit v) = let i = floor v :: Integer
                    then show i
                    else show v
 printLit (StringLit s) = show s
+
+printFloat :: Float -> String
+printFloat x | x == 0 = " 0 "
+printFloat x | x < 0  = "-" ++ printPosFloat (-x) ++ " "
+printFloat x | x > 0  = " " ++ printPosFloat x    ++ " "
+printFloat _ = error "illegal number for printFloat"
+
+-- | The maximum number of decimal digits needed to display the mantissa of a
+-- Float. For IEEE 754-2008 binary32 format, this is 8 decimal digits.
+maxFloatDigits :: Int
+maxFloatDigits = ceiling (log 2 / log 10 * fromIntegral(floatDigits (0::Float)) :: Float)
+
+printPosFloat :: Float -> String
+printPosFloat x =
+    let (digits, ex) = floatToDigits 10 x
+    in
+        if ex <= maxFloatDigits && length digits - ex <= maxFloatDigits
+           then
+               if ex >= length digits
+                   then concatMap show (padDigitsRight digits ex)
+                   else
+                       if ex > 0
+                           then concatMap show (take ex digits) ++ "."
+                               ++ concatMap show (drop ex digits)
+                           else "." ++ concatMap show (padDigitsLeft digits ex)
+           else
+               concatMap show (take 1 digits) ++ "."
+                   ++ concatMap show (drop 1 digits) ++ "E"
+                   ++ (if ex >= 1 then "+" else "") ++ show (ex - 1)
+
+padDigitsRight :: [Int] -> Int -> [Int]
+padDigitsRight digits ex = digits ++ replicate (ex - length digits) 0
+
+padDigitsLeft :: [Int] -> Int -> [Int]
+padDigitsLeft digits ex = replicate (-ex) 0 ++ digits
 
 printVarName :: VarName -> String
 printVarName (VarName varType name) = name ++ case varType of

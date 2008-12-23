@@ -15,7 +15,8 @@ import BasicBuiltin(Builtin(..))
 import BasicLexCommon(Tagged(..))
 import BasicMonad
 import BasicResult
-import BasicRuntimeParser(dataValsP,readFloat)
+import BasicPrinter(printFloat)
+import BasicRuntimeParser(dataValsP,readFloat,trim)
 import BasicSyntax
 
 data JumpTableEntry = JumpTableEntry {
@@ -78,7 +79,8 @@ liftFVOp1 _ _             = typeMismatch
 
 liftFVBuiltin1 :: (Float -> Float) -> [Val] -> Code Val
 liftFVBuiltin1 f [FloatVal v1] = return $ FloatVal $ f v1
-liftFVBuiltin1 _ _ = typeMismatch
+liftFVBuiltin1 _ [_] = typeMismatch
+liftFVBuiltin1 _ _ = wrongNumArgs
 
 liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
 liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
@@ -100,7 +102,8 @@ liftSVBOp2 _ _             _               = typeMismatch
 valError :: RuntimeError -> Code Val
 valError err = raiseRuntimeError err >> return (FloatVal 0)
 
-typeMismatch, invalidArgument, divisionByZero :: Code Val
+wrongNumArgs, typeMismatch, invalidArgument, divisionByZero :: Code Val
+wrongNumArgs    = valError WrongNumberOfArgumentsError
 typeMismatch    = valError TypeMismatchError
 invalidArgument = valError InvalidArgumentError
 divisionByZero  = valError DivisionByZeroError
@@ -164,86 +167,115 @@ evalBinOp op =
         OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
 -- TO DO: check defined behavior of AND & OR
 
+checkArgTypes :: [ValType] -> [Val] -> Code ()
+checkArgTypes types vals = do
+    if length types == length vals
+        then
+            if and [t == typeOf v | t <- types | v <- vals]
+                then return ()
+                else typeMismatch >> return ()
+        else
+            wrongNumArgs >> return ()
+
 evalBuiltin :: Builtin -> [Val] -> Code Val
 evalBuiltin builtin args = case builtin of
     AbsBI -> liftFVBuiltin1 abs args
-    AscBI -> case args of
-        [StringVal v] ->
-            if length v == 0
+    AscBI -> do
+        checkArgTypes [StringType] args
+        let [StringVal v] = args
+        if length v == 0
             then invalidArgument
             else return $ FloatVal (fromIntegral (fromEnum (head v)))
-        _ -> typeMismatch
     AtnBI -> liftFVBuiltin1 atan args
-    ChrBI -> case args of
-        [FloatVal v] ->
-            let iv = floatToInt v in
-                if iv < 0 || iv > 255
-                then invalidArgument
-                else return $ StringVal ([toEnum iv])
-        _ -> typeMismatch
+    ChrBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal v] = args
+        let iv = floatToInt v
+        if iv < 0 || iv > 255
+            then invalidArgument
+            else return $ StringVal [toEnum iv]
     CosBI -> liftFVBuiltin1 cos args
     ExpBI -> liftFVBuiltin1 exp args
     IntBI -> liftFVBuiltin1 (fromIntegral . floatToInt) args
-    LeftBI -> case args of
-        [StringVal sv, FloatVal fv] ->
-            let iv = floatToInt fv in
-                return (StringVal (take iv sv))
-        _ -> typeMismatch
-    LenBI -> case args of
-        [StringVal sv] -> return (FloatVal (fromIntegral (length sv)))
-        _ -> typeMismatch
-    LogBI -> liftFVBuiltin1 log args
+    LeftBI -> do
+        checkArgTypes [StringType, FloatType] args
+        let [StringVal sv, FloatVal fv] = args
+        let iv = floatToInt fv
+        if iv < 0
+            then invalidArgument
+            else return (StringVal (take iv sv))
+    LenBI -> do
+        checkArgTypes [StringType] args
+        let [StringVal sv] = args in return (FloatVal (fromIntegral (length sv)))
+    LogBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args in if fv <= 0 then invalidArgument else return (FloatVal (log fv))
     MidBI -> case args of
         [StringVal sv, FloatVal fv] ->
             let iv = floatToInt fv in
-                return (StringVal (drop (iv-1) sv))
+                if iv < 1
+                    then invalidArgument
+                    else return (StringVal (drop (iv-1) sv))
+        [_, _] -> typeMismatch
         [StringVal sv, FloatVal fv1, FloatVal fv2] ->
             let iv1 = floatToInt fv1
                 iv2 = floatToInt fv2
             in
-                return (StringVal (take iv2 (drop (iv1-1) sv)))
-        _ -> typeMismatch
-    RightBI -> case args of
-        [StringVal sv, FloatVal fv] ->
-            let iv = floatToInt fv in
-                return (StringVal (drop (length sv - iv) sv))
-        _ -> typeMismatch
-    RndBI -> case args of
-        [FloatVal fv] -> do
-            let iv = floatToInt fv
-            if iv < 0
-                then seedRandom iv
-                else return ()
-            rv <- if (iv == 0) then getPrevRandom else getRandom
-            return (FloatVal rv)
-        _ -> typeMismatch
+                if iv1 < 1 || iv2 < 0
+                    then invalidArgument
+                    else return (StringVal (take iv2 (drop (iv1-1) sv)))
+        [_, _, _] -> typeMismatch
+        _ -> wrongNumArgs
+    RightBI -> do
+        checkArgTypes [StringType, FloatType] args
+        let [StringVal sv, FloatVal fv] = args
+        let iv = floatToInt fv
+        if iv < 0
+            then invalidArgument
+            else return (StringVal (drop (length sv - iv) sv))
+    RndBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args
+        let iv = floatToInt fv
+        if iv < 0
+            then seedRandom iv
+            else return ()
+        rv <- if (iv == 0) then getPrevRandom else getRandom
+        return (FloatVal rv)
     SgnBI -> liftFVBuiltin1 (\v -> if v < 0 then -1 else if v > 0 then 1 else 0) args
     SinBI -> liftFVBuiltin1 sin args
-    SpcBI -> case args of
-        [FloatVal fv] ->
-            let iv = floatToInt fv in
-                return (StringVal (replicate iv ' '))
-        _ -> typeMismatch
-    SqrBI -> liftFVBuiltin1 sqrt args
-    StrBI -> case args of
-        [FloatVal fv] -> return (StringVal (showVal (FloatVal fv)))
-        _ -> typeMismatch
-    TabBI -> case args of
-        [FloatVal fv] ->
-            let destCol = floatToInt fv in
-                if (destCol < 0)
-                  then invalidArgument
-                  else do
-                    curCol <- getOutputColumn
-                    return $ StringVal $
-                        if curCol > destCol
-                          then "\n" ++ replicate destCol ' '
-                          else replicate (destCol - curCol) ' '
-        _ -> typeMismatch
+    SpcBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args
+        let iv = floatToInt fv
+        if iv < 0
+           then invalidArgument
+           else return (StringVal (replicate iv ' '))
+    SqrBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args
+        if fv < 0
+            then invalidArgument
+            else return (FloatVal (sqrt fv))
+    StrBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args in return (StringVal (showVal (FloatVal fv)))
+    TabBI -> do
+        checkArgTypes [FloatType] args
+        let [FloatVal fv] = args
+        let destCol = floatToInt fv
+        if (destCol < 0)
+          then invalidArgument
+          else do
+            curCol <- getOutputColumn
+            return $ StringVal $
+                if curCol > destCol
+                  then "\n" ++ replicate destCol ' '
+                  else replicate (destCol - curCol) ' '
     TanBI -> liftFVBuiltin1 tan args
-    ValBI -> case args of
-        [StringVal sv] -> return (FloatVal (maybe 0 id (readFloat sv)))
-        _              -> typeMismatch
+    ValBI -> do
+        checkArgTypes [StringType] args
+        let [StringVal sv] = args in return (FloatVal (maybe 0 id (readFloat (trim sv))))
 
 -- Interpret a tagged statement.
 -- Sets the line number in the state, then passes the statement on to interpS.
@@ -315,7 +347,7 @@ interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
                 let index' = index+step
                 setScalarVar control (FloatVal index')
                 if (step>=0 && index'<=lim)
-                    || (step<0 && index>=lim)
+                    || (step<0 && index'>=lim)
                     then continue True
                     else resume False
             else passOn True
@@ -389,7 +421,7 @@ inputVars vars = do
                 else do
                     let vals = map fromJust maybeVals
                     sequence_ (zipWith setVar vars vals)
-                    case compare (length vars) (length vals) of
+                    case compare (length vars) (length ivs) of
                         LT -> printString "!EXTRA INPUT IGNORED\n"
                         GT -> do
                             printString "?"
@@ -415,27 +447,36 @@ interpRead var = do
         (Just val) -> setVar var val
 
 getVar :: Var -> Code Val
-getVar (ScalarVar vn) = getScalarVar vn
+getVar (ScalarVar vn) = do
+    val <- getScalarVar vn
+    coerceToExpression val
 getVar (ArrVar vn xs) = do
     inds <- mapM eval xs
     is <- checkArrInds inds
     val <- getArrVar vn is
-    return $ case val of
-        (IntVal iv) -> FloatVal (fromIntegral iv)
-        _           -> val
+    coerceToExpression val
 
 setVar :: Var -> Val -> Code ()
-setVar (ScalarVar vn) val = setScalarVar vn val
+setVar (ScalarVar vn) val = do
+    val' <- coerce vn val
+    setScalarVar vn val'
 setVar (ArrVar vn xs) val = do
     inds <- mapM eval xs
     is <- checkArrInds inds
     val' <- coerce vn val
     setArrVar vn is val'
 
+coerceToExpression :: Val -> Code Val
+coerceToExpression val = case typeOf val of
+    IntType -> coerce FloatType val
+    _       -> return val
+
 coerce :: Typeable a => a -> Val -> Code Val
 coerce var val = case (typeOf var, val) of
     (IntType,    (FloatVal fv)) -> return $ IntVal (floatToInt fv)
-    (FloatType,  (FloatVal _ )) -> return val
+    (FloatType,  (FloatVal _))  -> return val
+    (FloatType,  (IntVal iv))   -> return $ FloatVal (fromIntegral iv)
+    (IntType,    (IntVal _))    -> return val
     (StringType, (StringVal _)) -> return val
     (_,          _)             -> typeMismatch
 
@@ -455,12 +496,9 @@ checkArrInds indVals = do
     let inds = map floatToInt indFs -- round dimensions as per standard
     return inds
 
--- If Float is a round number, show it as an Int.
 showVal :: Val -> String
-showVal (FloatVal v) =
-    let i = floatToInt v
-     in " " ++ (if fromIntegral i == v then show i else show v) ++ " "
-showVal (IntVal i) = show i
+showVal (FloatVal fv) = printFloat fv
+showVal (IntVal iv) = if iv > 0 then " " else "" ++ show iv ++ " "
 showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()

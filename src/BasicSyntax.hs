@@ -17,6 +17,9 @@ data ValType = FloatType | IntType | StringType
 class Typeable a where
     typeOf :: a -> ValType
 
+instance Typeable ValType where
+    typeOf = id
+
 data Literal =
     FloatLit Float
   | StringLit String

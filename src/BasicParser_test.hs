@@ -26,7 +26,7 @@ badExpr source expectedError = TestCase $
   assertParseError id SyntaxError exprP (tokenize source) expectedError
 
 test_parses_multiple_statements = goodStatements
-    ":?::?:"
+    ":?::?: "
     [(2,PrintS [] True), (5,PrintS [] True)]
  
 test_parse_bare_print = goodStatements
@@ -69,6 +69,10 @@ test_parse_goto = goodStatements
     "GOTO20"
     [(1,GotoS 20)]
 
+test_ignores_space_after_target = goodStatements
+    "GOTO20 "
+    [(1,GotoS 20)]
+ 
 test_parse_gosub = goodStatements
     "GOSUB20"
     [(1,GosubS 20)]
@@ -188,7 +192,7 @@ test_precedence = TestList [
 test_parentheses = TestList [
     goodExpr "(1+2)*3" (BinX MulOp (ParenX (BinX AddOp (fl 1) (fl 2))) (fl 3)),
     goodExpr "-(1+2)*3" (BinX MulOp (MinusX (ParenX (BinX AddOp (fl 1) (fl 2)))) (fl 3)),
-    goodExpr "(1+(2-3))*4" (BinX MulOp (ParenX (BinX AddOp (fl 1) (ParenX (BinX SubOp (fl 2) (fl 3))))) (fl 4)),
+    goodExpr "(1+(2-3))*4" (BinX MulOp (ParenX (BinX AddOp (fl 1) (ParenX (BinX SubOp (fl 2) (fl 3))))) (fl 4))
   ]
 
 test_embedded_spaces_are_ignored = TestList [
