@@ -6,7 +6,6 @@ module IOStream (IOStream(..),IOStream'(..)) where
 
 import Data.IORef
 import System.IO
-import qualified Data.ByteString.Char8 as BS
 
 class IOStream' h where
     vGetContents :: h -> IO String
@@ -24,26 +23,24 @@ instance IOStream' Handle where
     vGetLine = hGetLine
     vIsEOF   = hIsEOF
 
-instance IOStream' (IORef BS.ByteString) where
-    vGetContents h = do
-        text <- readIORef h
-        return $ BS.unpack text
-    vSetContents h s = writeIORef h (BS.pack s)
-    vPutStr h s = modifyIORef h (\text -> BS.append text (BS.pack s))
+instance IOStream' (IORef String) where
+    vGetContents h = readIORef h
+    vSetContents h s = writeIORef h s
+    vPutStr h s = modifyIORef h (\text -> text ++ s)
     vFlush _ = return ()
     vGetLine h = do
         text <- readIORef h
-        let (s, text') = BS.span (/= '\n') text
-        if not (BS.null text') && BS.head text' == '\n'
+        let (s, text') = span (/= '\n') text
+        if not (null text') && head text' == '\n'
             then do
-                writeIORef h (BS.tail text')
-                return (BS.unpack s)
+                writeIORef h (tail text')
+                return s
             else do
-                writeIORef h BS.empty
-                return (BS.unpack text')
+                writeIORef h ""
+                return text'
     vIsEOF h = do
         text <- readIORef h
-        return $ BS.null text
+        return $ null text
 
 data IOStream = forall h. IOStream' h => IOStream h
 

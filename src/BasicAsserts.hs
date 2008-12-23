@@ -1,6 +1,5 @@
 module BasicAsserts where
 
-import qualified Data.ByteString.Char8 as BS
 import Data.IORef
 import Data.List(isInfixOf)
 import Test.HUnit
@@ -10,7 +9,7 @@ import IOStream
 
 mkInput :: String -> IO IOStream
 mkInput s = do
-    input <- newIORef (BS.pack s)
+    input <- newIORef s
     return $ IOStream input
 
 noInput :: IO IOStream
@@ -18,7 +17,7 @@ noInput = mkInput ""
 
 mkOutput :: IO IOStream
 mkOutput = do
-    output <- newIORef (BS.pack "")
+    output <- newIORef ""
     return $ IOStream output
 
 assertOutputEq output expected = do

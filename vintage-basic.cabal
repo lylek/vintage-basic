@@ -33,7 +33,6 @@ Executable vintbas
                   HUnit >=1.2,
                   directory >=1,
                   process >=1,
-                  regex-compat >=0.71,
-                  bytestring >=0.9
+                  regex-compat >=0.71
   HS-Source-Dirs: src
   GHC-Options:    -Wall -O2
