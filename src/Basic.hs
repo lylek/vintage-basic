@@ -1,9 +1,9 @@
 import System.Environment(getArgs)
 import System.IO
-import BasicExecuter(executeFile)
-import BasicMonad(runProgram)
-import DurableTraps(done)
-import IOStream
+import Language.VintageBasic.Executer(executeFile)
+import Language.VintageBasic.BasicMonad(runProgram)
+import Control.Monad.CPST.DurableTraps(done)
+import IO.IOStream
 
 main :: IO ()
 main = do
