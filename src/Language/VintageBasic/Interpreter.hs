@@ -379,6 +379,7 @@ interpS _ (ReadS vars) = mapM_ interpRead vars
 interpS _ (DataS _) = return ()
 
 interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
+    assert (length params == length vals) WrongNumberOfArgumentsError
     assert
         (and [typeOf p == typeOf v | p <- params | v <- vals])
         TypeMismatchError

@@ -520,6 +520,27 @@ test_restore = testProgramOutput
     ])
     " 1 \n 2 \n 3 \n 2 \n 3 \n 1 \n 2 \n 3 \n"
 
+test_def_fn = TestList [
+    "simple float" ~: testProgramOutput
+        "1 DEFFNA(X)=X^2+1:?FNA(4)\n"
+        " 17 \n",
+    "multi-arg float" ~: testProgramOutput
+        "1 DEFFNA(X,Y,Z$)=LEN(Z$)^2+2*X+Y:?FNA(2,3,\"HELLO\")\n"
+        " 32 \n",
+    "multi-arg string" ~: testProgramOutput
+        "1 DEFFNA$(X$,Y,Z)=MID$(X$,Y-1,Z+1):?FNA$(\"MAGILLICUDDY\",3,4)\n"
+        "AGILL\n",
+    "wrong num args" ~: testProgramOutput
+        "1 DEFFNA(X)=X*2:?FNA()\n"
+        "!WRONG NUMBER OF ARGUMENTS IN LINE 1\n",
+    "type mismatch" ~: testProgramOutput
+        "1 DEFFNA(X)=X*2:?A(\"X\")\n"
+        "!TYPE MISMATCH IN LINE 1\n",
+    "undefined" ~: testProgramOutput
+        "1 ?FNA(5):DEFFNA(X)=X*2\n"
+        "!UNDEFINED FUNCTION A IN LINE 1\n"
+  ]
+
 test_stop = testProgramOutput "1 ?1:STOP:?2\n" " 1 \n!BREAK IN LINE 1\n"
 
 test_rem = testProgramOutput "1 ?1:REM COMMENT:?2\n2 ?3\n" " 1 \n 3 \n"
