@@ -32,7 +32,7 @@ test_float_assignment = testProgramOutput "10 A=5:PRINTA\n" " 5 \n"
 
 test_int_assignment_pos = testProgramOutput "10 A%=5.9:?A%\n" " 5 \n"
 
-test_int_assignment_neg = testProgramOutput "10 A%=-5.9:?A%\n" "-6 \n"
+test_int_assignment_neg = testProgramOutput "10 A%=-5.1:?A%\n" "-6 \n"
 
 test_string_assignment = testProgramOutput "10 A$=\"WOW\":?A$\n" "WOW\n"
 
@@ -41,7 +41,11 @@ test_variables_of_different_types_with_the_same_name_are_different = testProgram
     " 4.5 \n 3 \nHI\n"
 
 test_var_names_are_only_significant_to_two_characters = testProgramOutput
-    "10 SOMETHING=4:SIMULATE=2:?SOWHAT:?SIZZLE\n"
+    "10 SOMETHING=4:SAMETHING=2:?SOWHAT:?SALLY\n"
+    " 4 \n 2 \n"
+
+test_first_digit_of_var_name_is_significant_too = testProgramOutput
+    "10 SOMETHING12=4:SOMETHING22=2:?SOMETHING13:?SOMETHING24\n"
     " 4 \n 2 \n"
 
 test_dim = testProgramOutput "10 DIMA(20):A(0)=5:A(20)=6:PRINTA(20);A(0)\n" " 6  5 \n"
@@ -51,7 +55,15 @@ test_dim_default_size_is_at_least_10 = testProgramOutput "10 A(10)=6:PRINTA(10)\
 test_dim_default_size_is_at_most_10 = testProgramOutput
     "10 A(11)=6:PRINTA(11)\n" "!OUT OF ARRAY BOUNDS IN LINE 10\n"
 
+test_dim_with_negative_dimension = testProgramOutput
+    "10 DIMA(-1)\n"
+    "!NEGATIVE ARRAY DIM IN LINE 10\n"
+
 test_multiple_dimensions = testProgramOutput "10 DIMA(1,3):A(1,3)=12:PRINTA(1,3)\n" " 12 \n"
+
+test_array_dim_rounding = testProgramOutput
+    "10 DIMA(11.9):A(11.9)=5:?A(11.1):A(12)=6:?A(6)\n"
+    " 5 \n!OUT OF ARRAY BOUNDS IN LINE 10\n"
 
 test_for_loop_with_array = testProgramOutput "10 FORI=1TO10:A(I)=10-I:NEXT:PRINTA(3)\n" " 7 \n"
 
@@ -78,9 +90,13 @@ test_boolean_logic = TestList $ [
     "not" ~: testProgramOutput "10 ?NOT0:?NOT-1:?NOT2\n" "-1 \n 0 \n 0 \n"
   ]
 
-test_negation = testProgramOutput "10 A=5:?-A:?-(-A)\n" "-5 \n 5 \n"
+test_boolean_logic_with_nonintegers = TestList $ [
+    "and" ~: testProgramOutput "10 ?0.1AND-0.1:?0.1AND0:?0AND0.1\n" " .1 \n 0 \n 0 \n",
+    "or"  ~: testProgramOutput "10 ?0OR-0.1:?0.1OR0:?0OR0\n" "-.1 \n .1 \n 0 \n",
+    "not" ~: testProgramOutput "10 ?NOT-0.9:?NOT-0.1:?NOT0.1:?NOT0.9:?NOT1.1\n" " 0 \n 0 \n 0 \n 0 \n 0 \n"
+  ]
 
--- TODO: test automatic conversion of float to int in arguments
+test_negation = testProgramOutput "10 A=5:?-A:?-(-A)\n" "-5 \n 5 \n"
 
 test_abs = testExpressions [
     ("ABS()", "!WRONG NUMBER OF ARGUMENTS IN LINE 1"),
@@ -163,9 +179,11 @@ test_left = testExpressions [
     ("LEFT$(\"ABC\",\"A\")", "!TYPE MISMATCH IN LINE 1"),
     ("LEFT$(1,1)", "!TYPE MISMATCH IN LINE 1"),
     ("LEFT$(\"ABC\",-1)", "!INVALID ARGUMENT IN LINE 1"),
+    ("LEFT$(\"ABC\",-.1)", "!INVALID ARGUMENT IN LINE 1"),
     ("LEFT$(\"ABC\", 0)", ""),
     ("LEFT$(\"ABC\", 1)", "A"),
     ("LEFT$(\"ABC\", 2)", "AB"),
+    ("LEFT$(\"ABC\", 2.9)", "AB"),
     ("LEFT$(\"ABC\", 3)", "ABC"),
     ("LEFT$(\"ABC\", 4)", "ABC"),
     ("LEFT$(\"A\",1,1)", "!WRONG NUMBER OF ARGUMENTS IN LINE 1")
@@ -216,6 +234,7 @@ test_mid = testExpressions [
     ("MID$(\"ABC\", 2,0)", ""),
     ("MID$(\"ABC\", 2,1)", "B"),
     ("MID$(\"ABC\", 2,2)", "BC"),
+    ("MID$(\"ABC\", 2.9, 2.9)", "BC"),
     ("MID$(\"ABC\", 2,3)", "BC"),
     ("MID$(\"ABC\", 3,0)", ""),
     ("MID$(\"ABC\", 3,1)", "C"),
@@ -234,6 +253,7 @@ test_right = testExpressions [
     ("RIGHT$(\"ABC\", 0)", ""),
     ("RIGHT$(\"ABC\", 1)", "C"),
     ("RIGHT$(\"ABC\", 2)", "BC"),
+    ("RIGHT$(\"ABC\", 2.9)", "BC"),
     ("RIGHT$(\"ABC\", 3)", "ABC"),
     ("RIGHT$(\"ABC\", 4)", "ABC"),
     ("RIGHT$(\"A\",1,1)", "!WRONG NUMBER OF ARGUMENTS IN LINE 1")
@@ -278,6 +298,7 @@ test_spc = testExpressions [
     ("SPC(-1)", "!INVALID ARGUMENT IN LINE 1"),
     ("SPC(0)", ""),
     ("SPC(1)", " "),
+    ("SPC(2.9)", "  "),
     ("SPC(10)", "          "),
     ("SPC(1,1)", "!WRONG NUMBER OF ARGUMENTS IN LINE 1")
   ]
@@ -355,31 +376,38 @@ test_return_does_double_duty = testProgramOutput (unlines [
 
 test_on_goto = TestList [
     testProgramOutput "1 ON\"A\"GOTO2\n" "!TYPE MISMATCH IN LINE 1\n",
-    testProgramOutput "1 A=-1:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
-    testProgramOutput "1 A= 0:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
-    testProgramOutput "1 A= 1:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 3 \n 4 \n 5 \n 6 \n",
-    testProgramOutput "1 A= 2:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 4 \n 5 \n 6 \n",
-    testProgramOutput "1 A= 3:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 5 \n 6 \n",
-    testProgramOutput "1 A= 4:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
-    testProgramOutput "1 A= 2:ONAGOTO3,5,4\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 5 \n 6 \n"
+    testProgramOutput "1 A=-1  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A=-0.1:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 0  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 1  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 3 \n 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 2  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 2.9:ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 3  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 5 \n 6 \n",
+    testProgramOutput "1 A= 4  :ONAGOTO3,4,5\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 2 \n 3 \n 4 \n 5 \n 6 \n",
+    testProgramOutput "1 A= 2  :ONAGOTO3,5,4\n2 ?2\n3 ?3\n4 ?4\n5 ?5\n6 ?6\n" " 5 \n 6 \n"
   ]
 
 test_on_gosub = TestList [
     testProgramOutput "1 ON\"A\"GOSUB2\n" "!TYPE MISMATCH IN LINE 1\n",
-    testProgramOutput "1 A=-1:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
-    testProgramOutput "1 A= 0:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
-    testProgramOutput "1 A= 1:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 3 \n",
-    testProgramOutput "1 A= 2:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 4 \n",
-    testProgramOutput "1 A= 3:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 5 \n",
-    testProgramOutput "1 A= 4:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
-    testProgramOutput "1 A= 2:ONAGOSUB3,5,4:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 5 \n"
+    testProgramOutput "1 A=-1  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
+    testProgramOutput "1 A=-0.1:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
+    testProgramOutput "1 A= 0  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
+    testProgramOutput "1 A= 1  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 3 \n",
+    testProgramOutput "1 A= 2  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 4 \n",
+    testProgramOutput "1 A= 2.9:ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 4 \n",
+    testProgramOutput "1 A= 3  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 5 \n",
+    testProgramOutput "1 A= 4  :ONAGOSUB3,4,5:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" "",
+    testProgramOutput "1 A= 2  :ONAGOSUB3,5,4:END\n2 ?2:RETURN\n3 ?3:RETURN\n4 ?4:RETURN\n5 ?5:RETURN\n6 ?6:RETURN\n" " 5 \n"
   ]
 
 test_if = TestList [
     testProgramOutput "1 IF\"A\"THEN?1\n" "!TYPE MISMATCH IN LINE 1\n",
     testProgramOutput "1 IF-11THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n",
     testProgramOutput "1 IF 0THEN?1:?2\n2 ?3\n" " 3 \n",
-    testProgramOutput "1 IF 1THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n"
+    testProgramOutput "1 IF 1THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n",
+    testProgramOutput "1 IF .1THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n",
+    testProgramOutput "1 IF -.1THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n",
+    testProgramOutput "1 IF 2.1THEN?1:?2\n2 ?3\n" " 1 \n 2 \n 3 \n"
   ]
 
 test_for = TestList [
@@ -430,6 +458,8 @@ test_tab = testProgramOutput
     "10 ?TAB(4);\"A\";TAB(10);\"B\";TAB(11);\"C\";TAB(11);\"D\"\n"
     "    A     BC\n           D\n"
 
+test_tab_with_nonintegers = testProgramOutput "10 ?TAB(2.9);\"A\"\n" "  A\n"
+
 test_tab_with_newlines_and_linefeeds = testProgramOutput
     "10 ?\"HI\";CHR$(13);\"TO\";TAB(5);\"YOU\";CHR$(10);\"AND\";TAB(10);\"ME\"\n"
     "HI\rTO   YOU\nAND       ME\n"
@@ -437,6 +467,7 @@ test_tab_with_newlines_and_linefeeds = testProgramOutput
 test_tab_wrongargs = testExpressions [
     ("TAB()", "!WRONG NUMBER OF ARGUMENTS IN LINE 1"),
     ("TAB(\"A\")", "!TYPE MISMATCH IN LINE 1"),
+    ("TAB(-1)", "!INVALID ARGUMENT IN LINE 1"),
     ("TAB(1,1)", "!WRONG NUMBER OF ARGUMENTS IN LINE 1")
   ]
 
