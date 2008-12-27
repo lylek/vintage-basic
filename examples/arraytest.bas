@@ -1,3 +1,0 @@
-10 DIMA$(20)
-20 A$(17)="VINTAGE"
-30 PRINT A$(17)

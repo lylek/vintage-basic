@@ -1,2 +1,0 @@
-10 INPUT"WHAT";A$,B,CD$(9),R,M%
-20 PRINT A$;B;CD$(9);R;M%

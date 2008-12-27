@@ -7,6 +7,7 @@ import Text.ParserCombinators.Parsec(eof,parse,sourceLine,sourceColumn,(<?>))
 import Language.VintageBasic.LexCommon
 import IO.IOStream
 
+-- | Make an input stream for testing.
 mkInput :: String -> IO IOStream
 mkInput s = do
     input <- newIORef s
