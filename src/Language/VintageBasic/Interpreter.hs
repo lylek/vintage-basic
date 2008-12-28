@@ -1,16 +1,13 @@
 {-# LANGUAGE FlexibleContexts, ParallelListComp, Rank2Types #-}
 
--- BasicInterp.hs
--- The heart of the interpreter, which uses the Basic monad.
--- Lyle Kopnicky
+-- | The heart of the BASIC interpreter. It is implemented on top
+-- of the BASIC monad.
 
 module Language.VintageBasic.Interpreter(interpLines) where
 
+import Control.Monad.CPST.DurableTraps
 import Data.List
 import Data.Maybe
-import Text.ParserCombinators.Parsec(parse)
-import Text.ParserCombinators.Parsec.Pos(sourceLine)
-import Control.Monad.CPST.DurableTraps
 import Language.VintageBasic.Builtins(Builtin(..))
 import Language.VintageBasic.LexCommon(Tagged(..))
 import Language.VintageBasic.BasicMonad
@@ -18,11 +15,15 @@ import Language.VintageBasic.Result
 import Language.VintageBasic.Printer(printFloat)
 import Language.VintageBasic.RuntimeParser(dataValsP,readFloat,trim)
 import Language.VintageBasic.Syntax
+import Text.ParserCombinators.Parsec(parse)
+import Text.ParserCombinators.Parsec.Pos(sourceLine)
 
+-- | Entry in the jump table, a lookup table that holds both
+-- program code and @DATA@ statements, indexed by 'Label'.
 data JumpTableEntry = JumpTableEntry {
-    jtLabel :: Label,
-    jtProgram :: Program,
-    jtData :: [String]
+    jtLabel :: Label,     -- ^ the starting line number
+    jtProgram :: Program, -- ^ program source starting at that line
+    jtData :: [String]    -- ^ @DATA@ strings starting at that line
 }
 
 type JumpTable = [JumpTableEntry]
@@ -33,13 +34,17 @@ programLookup jt lab = lookup lab [(jtLabel jte, jtProgram jte) | jte <- jt]
 dataLookup :: JumpTable -> Label -> (Maybe [String])
 dataLookup jt lab = lookup lab [(jtLabel jte, jtData jte) | jte <- jt]
 
+-- | Lazily interprets a list of BASIC lines of code.
+
+interpLines :: [Line] -> Program
+
 -- Note that jumpTable and interpLine are mutually recursive.
 -- The jumpTable contains interpreted code, which in turn calls
 -- the jumpTable to look up code.  Since the jumpTable is a single
--- data structure, it memoizes interpreted code, making 'program'
+-- data structure, it memoizes interpreted code, making 'interpLines'
 -- a just-in-time compiler.  (The only time code is reinterpreted
--- is following an IF statement.)
-interpLines :: [Line] -> Program
+-- is following an @IF@ statement.)
+
 interpLines progLines =
     let interpLine line@(Line lab stmts) =
             (lab, mapM_ (interpTS jumpTable) stmts, dataFromLine line)
@@ -98,8 +103,8 @@ liftSVBOp2 :: (String -> String -> Bool) -> Val -> Val -> Code Val
 liftSVBOp2 f (StringVal v1) (StringVal v2) = return $ boolToVal $ f v1 v2
 liftSVBOp2 _ _             _               = typeMismatch
 
--- The return (FloatVal 0) will never be executed, but is needed to make the types work
 valError :: RuntimeError -> Code Val
+-- The return (FloatVal 0) will never be executed, but is needed to make the types work out.
 valError err = raiseRuntimeError err >> return (FloatVal 0)
 
 wrongNumArgs, typeMismatch, invalidArgument, divisionByZero :: Code Val
@@ -108,6 +113,7 @@ typeMismatch    = valError TypeMismatchError
 invalidArgument = valError InvalidArgumentError
 divisionByZero  = valError DivisionByZeroError
 
+-- | Evaluate a BASIC expression.
 eval :: Expr -> Code Val
 eval (LitX (FloatLit v)) = return (FloatVal v)
 eval (LitX (StringLit v)) = return (StringVal v)
@@ -135,6 +141,7 @@ eval NextZoneX = do
     return $ StringVal $ replicate numSpaces ' '
 eval (ParenX x) = eval x
 
+-- | Evaluate an expression with a binary operator.
 evalBinOp :: BinOp -> Val -> Val -> Code Val
 evalBinOp op =
     case op of
@@ -165,7 +172,6 @@ evalBinOp op =
         GEOp -> liftFVBOp2 (>=)
         AndOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 && v2/=0 then v1 else 0
         OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
--- TO DO: check defined behavior of AND & OR
 
 checkArgTypes :: [ValType] -> [Val] -> Code ()
 checkArgTypes types vals = do
@@ -177,6 +183,7 @@ checkArgTypes types vals = do
         else
             wrongNumArgs >> return ()
 
+-- | Evaluate an expression with a builtin function.
 evalBuiltin :: Builtin -> [Val] -> Code Val
 evalBuiltin builtin args = case builtin of
     AbsBI -> liftFVBuiltin1 abs args
@@ -277,14 +284,14 @@ evalBuiltin builtin args = case builtin of
         checkArgTypes [StringType] args
         let [StringVal sv] = args in return (FloatVal (maybe 0 id (readFloat (trim sv))))
 
--- Interpret a tagged statement.
+-- | Interpret a tagged statement.
 -- Sets the line number in the state, then passes the statement on to interpS.
 interpTS :: JumpTable -> Tagged Statement -> Code ()
 interpTS jumpTable (Tagged pos statement) = do
     setLineNumber (sourceLine pos)
     interpS jumpTable statement
 
--- Interpret a single statement.
+-- | Interpret a single statement.
 -- In the type of interpS, the first () signifies what is passed to a
 -- resumed trap.  The second one represents what is returned by interpS.
 interpS :: JumpTable -> Statement -> Code ()
@@ -392,6 +399,7 @@ interpS _ (DefFnS vn params expr) = setFn vn $ \vals -> do
 gosubHandler :: BasicExceptionHandler
 gosubHandler x passOn _ continue = if isReturn x then continue False else passOn True
 
+-- | Interpret a computed @GOTO@ or @GOSUB@.
 interpComputed :: JumpTable -> (Label -> Statement) -> Expr -> [Label] -> Code ()
 interpComputed jumpTable cons x labs = do
     v <- eval x
@@ -404,10 +412,12 @@ interpComputed jumpTable cons x labs = do
         else
             return ()
 
+-- | Interpret a @NEXT@ with a supplied variable.
 interpNextVar :: VarName -> Code ()
 interpNextVar (VarName FloatType v) = raiseRuntimeException (Next (Just v))
 interpNextVar _ = raiseRuntimeError TypeMismatchError
 
+-- | Execute an @INPUT@ statement with a list of input variables.
 inputVars :: [Var] -> Code ()
 inputVars vars = do
     printString "? "
@@ -467,6 +477,8 @@ setVar (ArrVar vn xs) val = do
     val' <- coerce vn val
     setArrVar vn is val'
 
+-- | Coerce a value to the type it would have in an expression.
+-- Specifically coerces ints to floats.
 coerceToExpression :: Val -> Code Val
 coerceToExpression val = case typeOf val of
     IntType -> coerce FloatType val
@@ -494,7 +506,7 @@ checkArrInds :: [Val] -> Basic (BasicExcep Result ()) [Int]
 checkArrInds indVals = do
     indFs <- mapM (extractFloatOrFail TypeMismatchError) indVals
     assert (and (map (>=0) indFs)) NegativeArrayDimError
-    let inds = map floatToInt indFs -- round dimensions as per standard
+    let inds = map floatToInt indFs
     return inds
 
 showVal :: Val -> String
@@ -505,6 +517,7 @@ showVal (StringVal s) = s
 printVal :: Val -> Basic o ()
 printVal v = printString (showVal v)
 
+-- | Extract the @DATA@ strings from a program line.
 dataFromLine :: Line -> [String]
 dataFromLine (Line _ stmts) = concat (map (dataFromStatement . getTaggedVal) stmts)
 

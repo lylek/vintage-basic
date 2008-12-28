@@ -1,18 +1,21 @@
--- BasicTokenizer.hs
--- Finds and tokenizes BASIC keywords, in preparation for parsing.
--- Lyle Kopnicky
+-- | Finds and tokenizes BASIC keywords, in preparation for parsing. This allows
+-- keywords to be read even if there are no spaces around them. Even though
+-- the standard disallows it, many BASIC implementations allowed this to save
+-- memory or screen real estate. The down side is that longer variable names
+-- are not practical, since they might contain keywords.
 
 module Language.VintageBasic.Tokenizer
     (Token(..),TokenizedLine,isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
      isBuiltinTok,taggedTokensP,tokenP,printToken) where
 
 import Data.Char(toUpper)
-import Text.ParserCombinators.Parsec
 import Language.VintageBasic.Builtins(Builtin,builtinToStrAssoc)
 import Language.VintageBasic.LexCommon
+import Text.ParserCombinators.Parsec
 
 type TokenizedLine = Tagged [Tagged Token]
 
+-- | Parses one or more whitespace characters, producing a space token.
 spaceTokP :: Parser Token
 spaceTokP = whiteSpaceChar >> whiteSpace >> return SpaceTok
 
@@ -74,8 +77,6 @@ charTokTest _ _ = False
 
 taggedCharToksToString :: [Tagged Token] -> String
 taggedCharToksToString = map (getCharTokChar . getTaggedVal)
-
--- still need: numeric literals (incl labels), vars
 
 strToTokAssoc :: [(String, Token)]
 strToTokAssoc =
@@ -144,18 +145,20 @@ taggedTokenP =
        tok <- anyTokP
        return (Tagged pos tok)
 
+-- | The main parser used to read a series of tokens from a string.
 taggedTokensP :: Parser [Tagged Token]
 taggedTokensP =
     do toks <- many taggedTokenP
        eof <?> ""
        return toks
 
--- The single-token parser used at the parser level
+-- | The single-token parser used at the parser level
 tokenP :: (Token -> Bool) -> GenParser (Tagged Token) () (Tagged Token)
 tokenP test = token (printToken . getTaggedVal) getPosTag testTaggedToken
     where testTaggedToken (Tagged pos tok) =
             if test tok then Just (Tagged pos tok) else Nothing
 
+-- | Prettyprint a token for error reporting or debugging.
 printToken :: Token -> String
 printToken tok =
     case (lookup tok tokToStrAssoc) of

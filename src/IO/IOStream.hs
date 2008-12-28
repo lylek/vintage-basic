@@ -7,6 +7,9 @@ module IO.IOStream (IOStream(..),IOStream'(..)) where
 import Data.IORef
 import System.IO
 
+-- | The abstract base class describing methods for IOStreams.
+-- The purpose of each function is identical to the ones in
+-- System.IO.Handle starting with an 'h' instead of a 'v'.
 class IOStream' h where
     vGetContents :: h -> IO String
     vSetContents :: h -> String -> IO ()
@@ -15,6 +18,7 @@ class IOStream' h where
     vGetLine :: h -> IO String
     vIsEOF :: h -> IO Bool
 
+-- | An instance of IOStream' for IO Handles.
 instance IOStream' Handle where
     vGetContents = hGetContents
     vSetContents h s = hSetFileSize h 0 >> hPutStr h s
@@ -23,6 +27,7 @@ instance IOStream' Handle where
     vGetLine = hGetLine
     vIsEOF   = hIsEOF
 
+-- | An instance for IOStream' for references to Strings.
 instance IOStream' (IORef String) where
     vGetContents h = readIORef h
     vSetContents h s = writeIORef h s
@@ -42,8 +47,11 @@ instance IOStream' (IORef String) where
         text <- readIORef h
         return $ null text
 
+-- | A datatype wrapper for IOStream'.
 data IOStream = forall h. IOStream' h => IOStream h
 
+-- | IOStream is itself an instance of IOStream', which reduces the
+-- overhead of unwrapping them from the IOStream constructor.
 instance IOStream' IOStream where
     vGetContents (IOStream h) = vGetContents h
     vSetContents (IOStream h) = vSetContents h

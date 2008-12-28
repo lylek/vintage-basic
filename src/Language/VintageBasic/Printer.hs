@@ -1,6 +1,4 @@
--- BasicPrinter.hs
--- Prettyprinter for BASIC syntax.
--- Lyle Kopnicky
+-- | Prettyprinter for BASIC syntax and values.
 
 module Language.VintageBasic.Printer where
 
@@ -11,7 +9,7 @@ import Language.VintageBasic.Syntax
 import Language.VintageBasic.Builtins(Builtin,builtinToStrAssoc)
 import Data.Maybe(fromJust)
 
--- If it's a round number, print it as an integer.
+-- | Prettyprint a BASIC literal.
 printLit :: Literal -> String
 printLit (FloatLit v) = let i = floor v :: Integer
                 in if fromInteger i == v
@@ -19,6 +17,7 @@ printLit (FloatLit v) = let i = floor v :: Integer
                    else show v
 printLit (StringLit s) = show s
 
+-- | Prettyprint a floating point value, BASIC style.
 printFloat :: Float -> String
 printFloat x | x == 0 = " 0 "
 printFloat x | x < 0  = "-" ++ printPosFloat (-x) ++ " "
@@ -54,6 +53,7 @@ padDigitsRight digits ex = digits ++ replicate (ex - length digits) 0
 padDigitsLeft :: [Int] -> Int -> [Int]
 padDigitsLeft digits ex = replicate (-ex) 0 ++ digits
 
+-- | Prettyprint a variable name.
 printVarName :: VarName -> String
 printVarName (VarName varType name) = name ++ case varType of
     FloatType  -> ""

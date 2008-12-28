@@ -1,16 +1,15 @@
--- BasicSyntax.hs
--- Describes the abstract syntax of 
--- Lyle Kopnicky
+-- | Describes the abstract syntax of BASIC.
 
 module Language.VintageBasic.Syntax where
 
 import Language.VintageBasic.Builtins(Builtin)
 import Language.VintageBasic.LexCommon(Tagged(..))
 
+-- | A BASIC line number.
 type Label = Int
 
--- TODO: Check if Eq is really necessary for syntax elements
-
+-- | BASIC value types. The IntType is used for storage or function arguments
+-- but is always converted to FloatType for use in expressions.
 data ValType = FloatType | IntType | StringType
     deriving (Show,Eq)
 
@@ -36,18 +35,20 @@ instance Typeable VarName where
     typeOf (VarName valType _) = valType
 
 data Var = ScalarVar VarName | ArrVar VarName [Expr]
-    deriving (Show, Eq)
+    deriving (Show,Eq)
 
 instance Typeable Var where
     typeOf (ScalarVar varName) = typeOf varName
     typeOf (ArrVar varName _)  = typeOf varName
 
+-- | BASIC binary operators.
 data BinOp =
     AddOp | SubOp | MulOp | DivOp | PowOp
     | EqOp | NEOp | LTOp | LEOp | GTOp | GEOp
     | AndOp | OrOp
     deriving (Enum,Show,Eq)
 
+-- | BASIC expressions.
 data Expr =
     LitX Literal
   | VarX Var
@@ -56,10 +57,11 @@ data Expr =
   | NotX Expr
   | BinX BinOp Expr Expr
   | BuiltinX Builtin [Expr]
-  | NextZoneX
+  | NextZoneX                -- ^ commas in a @PRINT@ statement
   | ParenX Expr
     deriving (Show,Eq)
 
+-- | BASIC statements.
 data Statement =
     LetS Var Expr
   | DimS [(VarName, [Expr])]
@@ -68,10 +70,10 @@ data Statement =
   | OnGotoS Expr [Label]
   | OnGosubS Expr [Label]
   | ReturnS
-  | IfS Expr [Tagged Statement]
+  | IfS Expr [Tagged Statement] -- ^ includes all statements on the line following the @IF@
   | ForS VarName Expr Expr Expr
   | NextS (Maybe [VarName])
-  | PrintS [Expr] Bool -- True if should print newline
+  | PrintS [Expr] Bool -- ^ True if should print newline
   | InputS (Maybe String) [Var]
   | EndS
   | StopS
@@ -83,5 +85,6 @@ data Statement =
   | RemS String
     deriving (Show,Eq)
 
+-- | A line of BASIC, in fully parsed form, ready for interpretation.
 data Line = Line Label [Tagged Statement]
-    deriving (Show,Eq)
+    deriving (Show)

@@ -1,7 +1,5 @@
--- BasicParser.hs
--- Parses BASIC source code to produce abstract syntax.
+-- | Parses BASIC source code, in tokenized form, to produce abstract syntax.
 -- Also used at runtime to input values.
--- Lyle Kopnicky
 
 module Language.VintageBasic.Parser(exprP,statementListP) where
 
@@ -13,12 +11,12 @@ import Language.VintageBasic.LexCommon
 import Language.VintageBasic.Syntax
 import Language.VintageBasic.Tokenizer
 
--- TODO: think about when to use 'try'
-
--- only first 2 chars and 1st digit of variable names are siginificant
--- should make this settable by option
-varSignifLetters, varSignifDigits :: Int
+-- | The number of significant letters at the start of a variable name.
+varSignifLetters :: Int
 varSignifLetters = 2
+
+-- | The number of digits (following the letters) of a variable name that are significant.
+varSignifDigits :: Int
 varSignifDigits = 1
 
 type TokParser = GenParser (Tagged Token) ()
@@ -158,6 +156,7 @@ prefix :: Token -> (Expr -> Expr) -> Operator (Tagged Token) () Expr
 prefix tok fun =
     Prefix (do tokenP (==tok); return fun)
 
+-- | Parses a BASIC expression from tokenized source.
 exprP :: TokParser Expr
 exprP = buildExpressionParser opTable primXP
 
@@ -231,7 +230,7 @@ forSP = do
     x3 <- option (LitX (FloatLit 1)) (tokenP (==StepTok) >> exprP)
     return (ForS vn x1 x2 x3)
 
--- handles a NEXT and an optional variable list
+-- | Parses a @NEXT@ and an optional variable list.
 nextSP :: TokParser Statement
 nextSP = do
     tokenP (==NextTok)
@@ -348,6 +347,7 @@ statementP = do
         remSP, defFnSP, letSP]
     return (Tagged pos st)
 
+-- | Parses a list of statements from a tokenized BASIC source line.
 statementListP :: TokParser [Tagged Statement]
 statementListP = do
     many (tokenP (==ColonTok))

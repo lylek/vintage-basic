@@ -1,6 +1,5 @@
--- BasicLineScanner.hs
--- Reads lines of a BASIC program, including line numbers
--- Lyle Kopnicky
+-- | Reads lines of a BASIC program. It does just enough parsing to find
+-- the line number.
 
 module Language.VintageBasic.LineScanner(RawLine,rawLinesP) where
 

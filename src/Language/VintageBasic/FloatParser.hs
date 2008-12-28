@@ -1,9 +1,7 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 
--- BasicFloatParser.hs
--- Generic type class for parsing floats. Used both in parsing static code and at runtime
--- (input and DATA statements).
--- Lyle Kopnicky
+-- | Code for parsing floats. Used both in parsing static code and at runtime
+-- (@INPUT@ and @DATA@ statements).
 
 module Language.VintageBasic.FloatParser(FloatParser(..)) where
 
@@ -12,6 +10,8 @@ import Text.ParserCombinators.Parsec
 import Language.VintageBasic.LexCommon(Tagged,getTaggedVal)
 import Language.VintageBasic.Tokenizer(Token(..),tokenP,charTokTest)
 
+-- | Generic class for float parsers. Can be used to parse floats from raw
+-- characters (useful at runtime) or from tokenized text (for parsing source).
 class FloatParser tok st where
     digitP :: GenParser tok st Char
     dotP   :: GenParser tok st Char

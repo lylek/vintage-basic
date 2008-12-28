@@ -5,6 +5,7 @@ import Language.VintageBasic.BasicMonad(runProgram)
 import Control.Monad.CPST.DurableTraps(done)
 import IO.IOStream
 
+-- | Runs a list of BASIC programs specified on the command line.
 main :: IO ()
 main = do
     args <- getArgs

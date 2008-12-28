@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, RankNTypes, UndecidableInstances #-}
 
--- Question: can other monad transformers be layered on top of this one,
--- while retaining 'shift' and 'reset'?
-
 -- | A continuation-passing style monad transformer, providing partial continuations.
+-- Advantages of CPST over ContT include the definition of shift and reset in the
+-- monad, and the rank-3 polymorphism for flexible contexts. The disadvantage is that
+-- no other monad transformers can be composed on top of it, because it has too many
+-- parameters.
+
 module Control.Monad.CPST where
 
 import Control.Monad.Reader
