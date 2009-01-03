@@ -339,7 +339,8 @@ interpS jumpTable (IfS x sts) = do
 -- This is an intentionally authentic feature.  In fact, were we to try to
 -- test at the initial FOR, we wouldn't know which NEXT to jump to to skip
 -- the loop - it is undecidable.
-interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
+interpS _ (ForS control x1 x2 x3) = do
+    assert (typeOf control == FloatType) TypeMismatchError
     v1 <- eval x1
     _ <- extractFloatOrFail TypeMismatchError v1
     setScalarVar control v1
@@ -358,7 +359,6 @@ interpS _ (ForS control@(VarName FloatType _) x1 x2 x3) = do
                     then continue True
                     else resume False
             else passOn True
-interpS _ (ForS _ _ _ _) = raiseRuntimeError TypeMismatchError
 
 interpS _ (NextS Nothing) = raiseRuntimeException (Next Nothing)
 interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars

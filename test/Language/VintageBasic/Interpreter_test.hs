@@ -411,6 +411,8 @@ test_if = TestList [
   ]
 
 test_for = TestList [
+    testProgramOutput "1 FORA$=1TO10\n" "!TYPE MISMATCH IN LINE 1\n",
+    testProgramOutput "1 FORA%=1TO10\n" "!TYPE MISMATCH IN LINE 1\n",
     testProgramOutput "1 FORA=\"A\"TO3\n" "!TYPE MISMATCH IN LINE 1\n",
     testProgramOutput "1 FORA=1TO\"A\"\n" "!TYPE MISMATCH IN LINE 1\n",
     testProgramOutput "1 FORA=1TO3:?A:NEXT:?99:?A\n" " 1 \n 2 \n 3 \n 99 \n 4 \n",
