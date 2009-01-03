@@ -1,0 +1,649 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC User's Guide</title></head>
+<body>
+<h1>Vintage BASIC User's Guide</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>Congratulations on installing Vintage BASIC! You are now the
+proud owner of a copy of a versatile tool for BASIC development.</p><p>Vintage BASIC is a language derived from the Microsoft's
+original <a href="http://en.wikipedia.org/wiki/Altair_BASIC">Altair
+BASIC</a>.
+It would feel right at home on a Commodore 64. The design tensions of
+Vintage BASIC are:</p>
+<ul>
+<li>Run the majority of programs from <a style="font-style: italic;" href="http://www.amazon.com/BASIC-Computer-Games-Microcomputer-David/dp/0894800523/ref=sr_1_1?ie=UTF8&amp;s=books&amp;qid=1230497638&amp;sr=8-1">BASIC
+Computer Games: Microcomputer Edition</a>, by David H. Ahl. This
+book was a lot of fun and inspired a generation of programmers.</li>
+<li>Stick fairly close to the behavior of Microsoft BASIC v2 as
+found on the&nbsp;Commodore 64.</li>
+<li>Be informed by (but not always stick to) the ANSI Minimal
+BASIC standard (ANSI X.360-1978).</li>
+<li>Relax constraints in the language where it is easy to do so
+without compromising compatibility.</li></ul>Vintage BASIC is written in <a href="http://www.haskell.org">Haskell</a>.
+Haskell has a feature called monads, which aid in constructing custom
+control structures. The interpreter handles BASIC's dynamic
+control structures by using an advanced form of exception, rather than
+the traditional
+stack.<br><br>Early BASICs used an interactive prompt for editing
+program text. Vintage BASIC allows you to use your own text editor.
+However, it still supports the line numbers of traditional BASIC, as
+targets for control flow.<br><br><span style="font-weight: bold;">Table of Contents</span><br><ul id="mozToc"><!--mozToc h2 1 h3 2 h4 3 h5 4 h6 5 h6 6--><li><a href="#mozTocId731362">System Requirements and Installation</a></li><li><a href="#mozTocId230604">Running Vintage BASIC</a></li><li><a href="#mozTocId153285">BASIC
+Program Lines</a></li><li><a href="#mozTocId839205">BASIC Syntax</a></li><li><a href="#mozTocId277885">BASIC Types</a></li><li><a href="#mozTocId116379">BASIC
+Expressions</a><ul><li><a href="#mozTocId235686">Operator Precedence and Associativity</a></li><li><a href="#mozTocId251348">Builtin Functions</a></li></ul></li><li><a href="#mozTocId829004">BASIC
+Statements</a></li><li><a href="#mozTocId193848">Error Messages</a></li></ul><h2><a class="mozTocH2" name="mozTocId731362"></a>System Requirements and Installation</h2>
+<p>Vintage BASIC requires minimal resources, and will run on any
+platform with available Haskell compiler. The recommended compiler is <a href="http://www.haskell.org/ghc">GHC</a>. You can
+also download some pre-compiled binaries on the web site, <a href="http://www.vintage-basic.net">vintage-basic.net</a>.</p>
+<h2><a class="mozTocH2" name="mozTocId230604"></a>Running Vintage BASIC</h2>
+<p>The interpreter consists of one command-line tool, <code><span class="">vintbas</span></code> (<code>vintbas.exe</code>
+on Windows). It can take any number of filename parameters, each one
+the name of a BASIC source file. By convention (but not fiat), those
+should end in <code>.bas</code>. So, if you've written
+BASIC code and saved it in <code>miracle.bas</code>, you'd
+run it by typing <code>vintbas miracle.bas</code>.</p>
+<h2><a class="mozTocH2" name="mozTocId153285"></a>BASIC
+Program Lines</h2>
+<p>Each line in your BASIC source file should start with a BASIC
+line number (also called a <span style="font-style: italic;">label</span>).
+These numbers are part of the text at the start of the
+line, and not just a count of lines from the start of the file. They
+are used as labels for <code>GOTO</code>,&nbsp;<code>GOSUB</code>,
+and&nbsp;<code>THEN</code> targets, as well as in <code>RESTORE</code>
+statements. Here is a sample BASIC program:</p>
+<p style="margin-left: 40px;"><code>10 INPUT"YES OR
+NO";A$<br>
+20 IF A$ = "YES" THEN 50<br>
+30 IF A$ = "NO" THEN 60<br>
+40 PRINT"YOU MUST ENTER YES OR NO.":GOTO 10<br>
+50 PRINT"GREAT!":END<br>
+60 PRINT"WHY NOT?":END</code></p>
+<p>Barring any flow control changes, the lines are executed in
+order by line number, regardless of the sorting of the input file. If
+two lines in the input file have the same line number, the later one
+will take precedence (you will get a warning when lines are
+superseded). A space is not required following the line number, but it
+aids in readability.</p>
+<p>Control flow will end when your program reaches the end of the
+lines, when an <code>END</code> or <code>STOP</code>
+statement is encountered, or when an error occurs. Errors may occur
+during parsing or execution, and always being with an exclamation point
+(<code>!</code>).</p>
+<h2><a class="mozTocH2" name="mozTocId839205"></a>BASIC Syntax</h2>
+Each line of BASIC consists of a series of statements, separated by
+semicolons. Statements are executed in order, unless an error or
+control flow statement is encountered.
+<p>BASIC keywords are not case sensitive. You may
+freely use
+lowercase, uppercase, or mix both. Examples will be shown in caps since
+that is traditional for the language. Literal strings in quotes are
+case sensitive. They will be printed in the case used in the source.</p>
+<p>Spaces are not required between keywords. This is a violation
+of the ANSI standard, but was implemented on some early microcomputers
+in order to save memory. It will aid in compatibility with running
+programs written for such computers. Spaces are encouraged because the
+code can be harder to read without them. For example, <code>FORK=1TON</code>
+appears to set the value of a variable <code>FORK</code>
+to a weight of 1 ton. In reality it begins a <code>FOR</code>
+loop with control variable <code>K</code>, ranging in
+value from <code>1</code> to <code>N</code>.
+Ignoring spaces means that keywords must be tokenized by the parser
+before the parsing phase. It also makes it difficult to use long
+variable names, which might accidentally contain keywords. For example,
+<code>FACTOR</code> contains the keyword <code>TO</code>.
+Experience shows that people can get used to reading code without
+spaces.</p>
+<h2><a class="mozTocH2" name="mozTocId277885"></a>BASIC Types</h2>
+Vintage BASIC has a simple type system. In expressions, all values are
+either floating-point or string. Variables can additionally hold
+integers, which are converted to/from floating-point to be used in
+expressions. Floating-point values are also used for boolean logic. The
+canonial true value is <code>-1</code>, and the canonical
+false value is <code>0</code>. These are the values that
+will be generated by comparison operators. However, any nonzero value
+will be treated as true by the boolean operations.
+<h2><a class="mozTocH2" name="mozTocId116379"></a>BASIC
+Expressions</h2>
+<p>Expressions in BASIC, like in most languages, are used to
+compute a value. They can be used in many statements, such as <code>LET</code>,
+<code>DIM</code>, <code>ON-GOTO</code>, <code>ON-GOSUB</code>,
+<code>IF-THEN</code>, <code>FOR</code>, <code>PRINT</code>,
+and <code>DEF FN</code>. They consist of literal values
+and variable references, composed by operators and function calls.
+Let's look at each of these in turn.</p>
+<dl>
+<dt style="font-style: italic;">literal</dt>
+<dd>Literals include floating-point numbers and strings.
+Floating-point literals are of the form [+|-]999[.999][E[+|-]99]: a
+sign, a mantissa, and an exponent indicated by the letter E. The signs
+and exponent are optional. The decimal point is optional if you don't
+need to put any digits after it. Examples: <code>0</code>,
+<code>2</code>, <code>5.</code>, <code>5.6</code>,
+<code>90000000</code>, <code>-.01</code>, <code>1E-20</code>.
+Precision depends upon your platform, but is generally IEEE bin32
+(single precision). There are no special IEEE values, like +Inf or NaN.
+String literals are enclosed in quotes, e.g. <code>"HELLO"</code>.
+There are no escape sequences. To generate a quote character, append a <code>CHR$(34)</code>.</dd>
+<dt><span style="font-style: italic;">varname</span></dt>
+<dd>Variable names can include any number of letters followed
+by any number
+of digits, and a type indicator. However, only the first two letters
+and first digit are considered significant to distinguish variable
+names. Since computers historically did not have enough
+memory to handle long variable names, variable names were kept short.
+The ANSI Minimal BASIC standard, and some early BASICs, allowed only
+one letter and one digit in the variable name. In some later BASICs,
+the first two letters and the first digit of the variable name are
+considered significant. That is the choice made in Vintage BASIC. So,
+the variables <code>MILK123</code> and <code>MINT145</code>
+are considered the same.</dd>
+<dd></dd>
+<dd>Variables&nbsp;can store integers, floating-point
+numbers or strings. Integer variables are mainly there to save storage
+memory; in calculations they are converted to floats. String variable
+names are ended with a <code>$</code>, and integer
+variables with a <code>%</code>, while floating-point
+variables have no type indicator. Variable names with the same
+significant letters and digits but different type indicators are
+distinct. Thus, you can store a string in <code>A$</code>,
+a floating-point value in <code>A</code>, and an integer
+value in <code>A%</code> without a conflict.</dd>
+<dt style="font-style: italic;">var</dt>
+<dd>Variables can also be scalar or array. Scalar variables are
+indicated by an variable name alone. Array variables are accessed by
+following the variable name with parentheses enclosing a
+comma-separated list of expressions whose values are indices into the
+array. For example, <code>A(3)</code> is the value from
+index <code>3</code> in the floating-point array named <code>A</code>,
+and <code>FR$(2,3)</code> is a string value from index 2
+(in the first dimension) and 3 (in the second dimension) in an array
+named <code>FR$</code>. Scalar and array variables are
+also distinct from each other, so it is possible to have a scalar
+variable <code>A</code> with value <code>3</code>,
+so that <code>A(A)</code> would be <code>A(3)</code>
+and might contain some other value.<span style="font-style: italic;"></span></dd>
+<dt><code>FN</code> <span style="font-style: italic;">varname</span><code>(</code><span style="font-style: italic;">expr1</span><code>,</code>
+<span style="font-style: italic;">expr2</span><code>,</code>
+...<code>)</code></dt>
+<dd>Another sort of variable is a user-defined function.
+Defined using <code>DEF FN</code> statements, they are
+accessed in expressions by preceding the function name with the <code>FN</code>
+keyword. Example: <code>FN A(4)</code> calls the
+floating-point user-defined function <code>A</code> with argument value <code>4</code>.</dd>
+<dt><span style="font-style: italic;">builtin</span><code>(</code><span style="font-style: italic;">expr1</span><code>,</code>
+<span style="font-style: italic;">expr2</span><code>,</code>
+...<code>)</code></dt>
+<dd>Calls a builtin function. The names of the builtins are
+keywords, so they cannot be used in variable names. See the list of
+builtin functions below.</dd>
+<dt><code>(</code><span style="font-style: italic;">expr</span><code>)</code></dt>
+<dd>A parenthesized expression has the same value of
+expression. Parentheses can be used to override operator precedence.<code><span style="font-weight: bold;"></span></code></dd>
+<dt><code><span style="font-weight: bold;"></span>-</code>
+<span style="font-style: italic;">expr</span></dt>
+<dd>Negates a floating-point expression.</dd>
+<dt><code>+</code> <span style="font-style: italic;">expr</span></dt>
+<dd>No effect. This is included for parity with the negation
+operator.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>^</code> <span style="font-style: italic;">expr2</span></dt>
+<dd>Exponentiation. Raises the value of the first expression to
+the power of the value of the second expression.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>*</code> <span style="font-style: italic;">expr2</span></dt>
+<dd>Multiplication. Multiplies the value of the first
+expression by the value of the second expression.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>/</code> <span style="font-style: italic;">expr2</span></dt>
+<dd>Division. Divides the value of the first expression by the
+value of the second expression. Division by zero is an error.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>+</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Addition. Adds the value of the first expression to the
+value of the second expression.<br>
+</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>-</code> <span style="font-style: italic;">expr2</span></dt>
+
+
+<dd>Subtraction. Subtracts the value of the second expression
+from the value of the first expression.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>=</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Equality test. Evaluates to&nbsp;<code>0</code>
+if the two strings or numbers are equal, <code>-1</code>
+if they differ.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>&lt;&gt;</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Inequality test. Evaluates to <code>-1</code>
+if the two strings or numbers are equal, <code>0</code> if
+they differ.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>&lt;</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Less than. Evaluates to <code>-1</code> if the
+first string or number is less than the second, <code>0</code>
+otherwise. (Strings are compared alphabetically.)</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>&lt;=</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Less than or equal. Evaluates to <code>-1</code>&nbsp;if
+the first string or number is less than or equal to the second, <code>0</code>
+otherwise. (Strings are compared alphabetically.)</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>&gt;</code> <span style="font-style: italic;">expr2</span></dt>
+
+<dd>Greater than. Evaluates to <code>-1</code> if
+the first string or number is less than the second, <code>0</code>
+otherwise. (Strings are compared alphabetically.)</dd>
+<dt><span style="font-style: italic;">expr1</span>&nbsp;<code>&gt;=</code>
+<span style="font-style: italic;">expr2</span></dt>
+<dd>Greater than or equal. Evaluates to <code>-1</code>
+if the first string or number is less than or equal to the second, <code>0</code>
+otherwise. (Strings are compared alphabetically.)</dd>
+<dt><code>NOT</code> <span style="font-style: italic;">expr</span></dt>
+<dd>Negates a boolean expression. Specifically, nonzero values
+become <code>0</code> and <code>0</code>
+becomes <code>-1</code>.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>AND</code> <span style="font-style: italic;">expr2</span></dt>
+<dd>Logical conjunction. If neither expression evaluates to <code>0</code>,
+then the result is the value of <span style="font-style: italic;">expr1</span>.
+Otherwise, the result is <code>0</code>.</dd>
+<dt><span style="font-style: italic;">expr1</span>
+<code>OR</code> <span style="font-style: italic;">expr2</span></dt>
+<dd>Logical disjunction. If <span style="font-style: italic;">expr1</span> evaluates to
+a nonzero value, that value is the result. Otherwise, the value of <span style="font-style: italic;">expr2</span> is the result.</dd>
+</dl>
+<h3><a class="mozTocH3" name="mozTocId235686"></a>Operator Precedence and Associativity</h3>
+Operators are listed in precedence groups, from highest to lowest.<br>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td><span style="font-weight: bold;">Operators</span></td>
+<td><span style="font-weight: bold;">Associativity</span></td>
+</tr>
+<tr>
+<td>unary <code>-</code>, unary <code>+</code></td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>^</code></td>
+<td>right</td>
+</tr>
+<tr>
+<td><code>*</code>, <code>/</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td><code>+</code>, <code>-</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td><code>=</code>, <code>&lt;&gt;</code>,
+<code>&lt;</code>, <code>&lt;=</code>,
+<code>&gt;</code>, <code>&gt;=</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td><code>NOT</code></td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>AND</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td><code>OR</code></td>
+<td>left</td>
+</tr>
+</tbody>
+</table>
+<span style="font-weight: bold;"></span>
+<h3><a class="mozTocH3" name="mozTocId251348"></a>Builtin Functions</h3>
+The builtin functions each take a particular number of arguments of
+particular types. Passing the wrong number of arguments or types will
+result in a runtime error. Each argument can be an expression. The
+expressions are evaluated before being passed to the builtin function.<br>
+<dl>
+<dt><code>ABS(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the absolute value of an expression. (I.e., its
+negation if it is negative.)</dd>
+<dt><code>ASC(</code><span style="font-style: italic;">string</span><code>)</code></dt>
+<dd>Returns the ASCII value of the first character of the
+string.</dd>
+<dt><code>ATN</code><code>(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the arctangent of the value. The range is from -<span style="font-style: italic;">pi</span>/2 to <span style="font-style: italic;">pi</span>/2.</dd>
+<dt><code>CHR$(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns a single-character string with the specified ASCII
+value.</dd>
+<dt><code>COS(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the cosine of the value.</dd>
+<dt><code>EXP(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the transcendental number <span style="font-style: italic;">e</span> raised to the
+power of the value.</dd>
+<dt><code>INT(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Rounds the number down to the next lower integer.</dd>
+<dt><code>LEFT$(</code><span style="font-style: italic;">string</span><code>,
+</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns a prefix of the string, with the number of
+characters specified by the second argument. Negative numbers are an
+error, while numbers too large will result in the whole string being
+returned.</dd>
+<dt><code>LEN(</code><span style="font-style: italic;">string</span><code>)</code></dt>
+<dd>Returns the length of the string.</dd>
+<dt><code>LOG(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the logarithm, to base <span style="font-style: italic;">e</span>, of the number.
+Argument must be positive.</dd>
+<dt><code>MID$(</code><span style="font-style: italic;">string</span><code>,
+</code><span style="font-style: italic;">float</span><code></code><span style="font-style: italic;"></span><code>)</code></dt>
+<dt><code>MID$(</code><span style="font-style: italic;">string</span><code>,
+</code><span style="font-style: italic;">float</span><code>,
+</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>In its first form, returns a substring starting from the
+specified index (1-based), through the end of the string. In the second
+form, returns a substring starting an index specified by the second
+argument, with the number of characters specified by the third
+argument. Indexes less than one or string lengths less than zero will
+result in a runtime error. Any attempt to extract characters beyond the
+length of the string will be cut off at the end of the string with no
+error.</dd>
+<dt><code>RIGHT$(</code><span style="font-style: italic;">string</span><code>,
+</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns a suffix of the string, with the number of
+characters specified by the second argument. Negative numbers are an
+error, while numbers too large will result in the whole string being
+returned.</dd>
+<dt><code>RND(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Psuedorandom number generator. The behavior is different
+depending on the value passed. If the value is positive, the result
+will be a new random value between 0 and 1 (including 0 but not 1). If
+the value is zero, the result will be a repeat of the last random
+number generated. If the value is negative, it will be rounded down to
+the nearest integer and used to reseed the random number generator.
+Pseudorandom sequences can be repeated by reseeding with the same
+number.</dd>
+<dt><code>SGN(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Sign. Returns -1 if the value is negative, 0 if it is zero,
+or 1 if it is positive.</dd>
+<dt><code>SIN(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the sine of the specified value.</dd>
+<dt><code>SPC(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns a string containing the specified number of spaces.
+This is useful for formatting text.</dd>
+<dt><code>SQR(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the square root of the value. Argument must be
+non-negative.</dd>
+<dt><code>STR(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns a string representation of the floating-point
+value, as it would be printed by <code>PRINT</code>.</dd>
+<dt><code>TAB(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>In most BASICs this is a special command available only in <code>PRINT</code>
+statements, but in Vintage BASIC, it is just another builtin function.
+Vintage BASIC keeps track of the output column as text is printed. The <code>TAB</code>
+function&nbsp;generates a string with the number of spaces required
+to advance the cursor to the column number&nbsp;specified by the
+argument. Column numbers start with zero, which is consistent with
+Microsoft BASIC but not the ANSI standard, which starts with one
+instead. If the cursor is already past the desired column, the result
+string will begin with a newline, followed by the number of spaces
+required to reach the desired column. This behavior is consistent with
+the ANSI standard but not Microsoft BASIC, which fails to move the
+cursor in such cases.</dd>
+<dt><code>TAN(</code><span style="font-style: italic;">float</span><code>)</code></dt>
+<dd>Returns the tangent of the value.</dd>
+<dt><code>VAL(</code><span style="font-style: italic;">string</span><code>)</code></dt>
+<dd>Attempts to read the string as a floating-point number. If
+it fails, the result is zero.</dd>
+</dl>
+<h2><a class="mozTocH2" name="mozTocId829004"></a>BASIC
+Statements</h2>
+<dl>
+<dt><code>DATA</code> <span style="font-style: italic;">literal1</span><code>,</code>
+<span style="font-style: italic;">literal2</span><code>,</code>
+...</dt>
+<dd>Has no effect when executed, but supplies data for the <code>READ</code>
+statement. Each value can be a string or floating-point literal (not an
+expression). Whitespace is ignored around values. Double quotes can be
+placed around a string to escape whitespace and commas between the
+quotes.&nbsp;<code>DATA</code> statements can occur on
+the same line as other statements, but, due to its special parsing
+rules, it must be the last statement on the line. The line on which the
+<code>DATA</code> statement occurs can be used as the
+target of a <code>RESTORE </code>statement. Example: <code>DATA
+January, 31, "Martian History Month"</code>.</dd>
+<dt><code>DEF FN</code> <span style="font-style: italic;">varname</span><code>(</code><span style="font-style: italic;">arg1</span><code>,</code> <span style="font-style: italic;">arg2</span><code>,</code>
+...<code>)</code> <code>=</code> <span style="font-style: italic;">expr</span></dt>
+<dd>Defines a user-defined function. The arguments are
+variable names that may be used in the expression.
+While the standard allows only for numeric functions of a single
+floating-point variable, Vintage BASIC permits string, integer or
+floating-point functions ofany number and type of arguments. Example: <code>DEF
+FN F(X) = X^2 + 3*X - 4</code>. The argument variables shadow
+the original variables; that is, the value of the original variable
+with the same name will be restored after the function is evaluated.
+Like scalar variables but unlike arrays, user-defined functions may be
+repeatedly redefined. Warning: Recursive functions are definable, but
+will always result in an infinite loop.</dd>
+<dt><code>DIM</code><span style="font-style: italic;"> varname</span><code>(</code><span style="font-style: italic;">bound1</span><code>,</code><span style="font-style: italic;"> bound2</span><code>,</code><span style="font-style: italic;"> ...<span style="font-family: monospace;"></span></span><code>)</code></dt>
+<dd>Dimensions an array. That is, specifies the number of
+dimensions and upper index bounds for an array. The lower bound is
+always zero. Unlike most BASICs, the boundaries are not limited to
+literal values; they can be any expression. Attempting to re-dimension
+an array will produce an error. Arrays can be referenced without
+dimensioning; in that case they are automatically created as
+one-dimenional arrays with an upper bound of 10. Example: <code>DIM
+RX$(20, 5)</code> creates a two-dimensional, 20x5 array of
+strings.</dd>
+<dt><code>END</code></dt>
+<dd>Terminates execution with no error condition. This
+statement is not required at the end of a program because control flow
+will end automatically there.</dd>
+<dt><code>FOR</code> <span style="font-style: italic;">varname</span> = <span style="font-style: italic;">start</span> <code>TO</code>
+<span style="font-style: italic;">end</span> [<code>STEP</code>
+<span style="font-style: italic;">increment</span>]</dt>
+<dd>Marks the start of a <code>FOR-NEXT</code>
+loop, and its termination conditions. The control variable must be a
+floating-point variable. It is initialized to the value of the <span style="font-style: italic;">start</span> expression.
+Each time a <code>NEXT</code> is encountered, the control
+variable is incremented by one, or by <span style="font-style: italic;">increment</span> if the
+optional <code>STEP</code> clause is specified. If the
+value of the control variable has not exceeded the value
+of&nbsp;the <span style="font-style: italic;">end</span>
+expression, control will continue with the statement following the <code>FOR</code>.
+But if the value of the control value exceeds <span style="font-style: italic;">end</span> (greater than
+end if <span style="font-style: italic;">increment</span>
+is positive, less than end if <span style="font-style: italic;">increment</span>
+is negative), control will pass to the statement following the <code>NEXT</code>.
+The expressions <span style="font-style: italic;">start</span>,
+<span style="font-style: italic;">end</span>,
+and <span style="font-style: italic;">increment</span>
+are evaluated only once at the start of the loop. The termination
+condition is not evaluated before entering the loop, as it is not
+always possible to determine&nbsp;where the corresponding <code>NEXT</code>
+might be, should the loop meet the termination condition. (This
+contradicts the ANSI standard, but the ANSI standard is unenforceable.)
+Example: <code>FOR I = 1 TO 20 STEP 2: PRINT I, I*2: NEXT I</code>.</dd>
+<dt><code>GOSUB</code> <span style="font-style: italic;">label</span></dt>
+<dd>Transfers control to the line numbered <span style="font-style: italic;">label</span>. Upon
+encountering a <code>RETURN</code> statement, control will
+return to the statement following the <code>GOSUB</code>.
+This is the cornerstone of structured programming in BASIC. Note: <code>GO</code>
+and <code>SUB</code> are separate keywords and may be
+separated by space.</dd>
+<dt><code>GOTO</code> <span style="font-style: italic;">label</span></dt>
+<dd>Transfers control to the line numbered <span style="font-style: italic;">label</span>. Note: <code>GO</code>
+and <code>TO</code> are separate keywords and may be
+separated by space.</dd>
+<dt><code></code><code>IF</code> <span style="font-style: italic;">expr</span> <code>THEN</code>
+<span style="font-style: italic;">statement1</span><code>:</code>
+<span style="font-style: italic;">statement2</span><code>:</code>
+...<br>
+<code>IF</code> <span style="font-style: italic;">expr</span>
+<code>THEN</code> <span style="font-style: italic;">label</span><code></code></dt>
+<dd>Evaluates the truth of the supplied expression. If it is
+true, it executes the statements following it on the line. If it is
+false, control skips to the following line. The form with a label is a
+shorthand for <code>IF</code> <span style="font-style: italic;">expr</span> <code>THEN
+GOTO</code> <span style="font-style: italic;">label</span>.
+Expressions are expected to have floating-point values. They are
+considered false if zero and true otherwise. Note: if statements follow
+the <span style="font-style: italic;">label</span>
+form on the same line, they are ignored. Example: <code>IF
+A&gt;0 THEN Y=Y+3:GOTO 80</code>.</dd>
+<dt><code>INPUT</code> [<span style="font-style: italic;">prompt</span><code>;</code>]
+<span style="font-style: italic;">var1</span><code>,</code>
+<span style="font-style: italic;">var2</span><code>,</code>
+...</dt>
+<dd>Reads input from an interactive user prompt. The optional
+prompt string&nbsp;is followed by a question mark and a space. The
+user may then enter a series of values separated by commas. The format
+is the same as in the <code>DATA</code> statement, so
+quotes can be used to escape spaces or commas. Value types entered must
+match the variable types, or an error will be generated and the user
+will be re-prompted. The user will also be re-prompted (with a double
+question mark) if the user enters insufficient values to fill the
+variables. The variables may be scalar or (indexed) array variables.
+Examples: <code>INPUT "NAME AND AGE";NA$(I), AG(I)</code>.</dd>
+<dt><code>LET</code> <span style="font-style: italic;">var</span> = <span style="font-style: italic;">expr</span></dt>
+<dd>Evaluates the expression and assigns the value to the
+variable. The <code>LET</code> keyword is optional.</dd>
+<dt><code>NEXT</code> [<span style="font-style: italic;">var</span>]</dt>
+<dd>Returns control to a <code>FOR</code>
+statement to determine whether the loop should be repeated. If the
+termination condition has not been met, control will proceed with the
+line following the <code>FOR</code> statement. If the
+termination condition has been met, control will proceed with the
+statement following the <code>NEXT</code>. How does the
+interpreter determine which <code>FOR</code> goes with the
+<code>NEXT</code>? It is determined dynamically. If the
+<code>NEXT</code> has no variable, then it is the most
+recently encountered non-terminated <code>FOR</code>. If
+the <code>NEXT</code> indicates a variable, then it is the
+most recently encountered non-terminated <code>FOR</code>
+with that control variable. Usually, it is simple to glance at code and
+see which pairs of <code>FOR</code> and <code>NEXT</code>
+statements go together. But due to the dynamic nature of the connection
+between them, it is possible to write <code>NEXT</code>
+statements that are sometimes connected with one <code>FOR</code>,
+sometimes another. For an example, see <code>FOR</code>.</dd>
+<dt><code>ON</code> <span style="font-style: italic;">expr</span> <code>GOSUB</code>
+<span style="font-style: italic;">label1</span><code>,</code><span style="font-style: italic;"> label2</span><code>,</code>
+...</dt>
+<dd>Like <code>GOSUB</code>, but makes a decision
+about the target line based on the result of evaluating an expression.
+The value of <span style="font-style: italic;">expr</span>
+is rounded down to the nearest integer, and is used as an index into
+the list of labels, starting with 1. If the index is less than 1 or
+greater than the number of labels, control falls through to the next
+statement (as in Microsoft BASIC but in violation of the ANSI standard,
+which prescribes a runtime error).</dd>
+<dt><code>ON</code> <span style="font-style: italic;">expr</span> <code>GOTO</code>
+<span style="font-style: italic;">label1</span><code>,</code><span style="font-style: italic;"> label2</span><code>,</code>
+...</dt>
+<dd>Like <code>GOTO</code>, but makes a decision
+about the target line based on the result of evaluating an expression.
+The value of <span style="font-style: italic;">expr</span>
+is rounded down to the nearest integer, and is used as an index into
+the list of labels, starting with 1. If the index is less than 1 or
+greater than the number of labels, control falls through to the next
+statement (as in Microsoft BASIC but in violation of the ANSI standard,
+which prescribes a runtime error).</dd>
+<dt><code>PRINT</code> <span style="font-style: italic;">expr1</span><code>&nbsp;</code>[<code>;</code>|<code>,</code>]
+<span style="font-style: italic;">expr2</span> [<code>;</code>|<code>,</code>]<code></code>
+... [<code>;</code>]</dt>
+<dd>Outputs text to the user. Multiple expressions can be
+separated by semicolons or commas. Semicolons leave no space between
+printed expressions. A comma is used to align text neatly in columns;
+it forces the next output column to be the start of the next print
+zone. Print zones are always 14 characters wide. A newline will be
+automatically printed at the end of the line, unless the <code>PRINT</code>
+statement ends in a semicolon. Floating-point values are automatically
+padded with one trailing space, and positive values are also padded
+with a leading space, so that they take up the same amount of space as
+negative numbers. Example: <code>PRINT "TURN";TU, "YOU
+HAVE";LI;"LIVES LEFT"</code>.</dd>
+<dt><code>RANDOMIZE</code></dt>
+<dd>Re-seeds the random number generator used for the <code>RND</code>
+function, based on the number of seconds that have elapsed since
+midnight, local time.</dd>
+<dt><code>READ</code> <span style="font-style: italic;">var1</span><code>,</code>
+<span style="font-style: italic;">var2</span><code>,</code>
+...</dt>
+<dd>Reads data from <code>DATA</code> statements
+into variables. A pointer is maintained into the <code>DATA</code>
+values, which could be anywhere within the program. Values are read in
+order into the variables, and the pointer is advanced. A runtime error
+occurs if there are not enough <code>DATA</code> values to
+fill the variables. The <code>DATA</code> pointer can be
+reset using a <code>RESTORE</code> statement. Example: <code>READ
+A$, B</code>.</dd>
+<dt><code>REM</code> <span style="font-style: italic;">text</span></dt>
+<dd>A comment (remark). All characters through the end of the
+line are considered to be part of the comment. Example: <code>REM
+BRIDGE BY J. Q. PROGRAMMER</code>.</dd>
+<dt><code>RESTORE</code> [<span style="font-style: italic;">label</span>]</dt>
+<dd>Adjusts the <code>DATA</code> value pointer.
+Without a line number, the pointer is reset to the first <code>DATA
+</code>statement of the program. With a line number, the
+pointer is moved to the first <code>DATA</code> statement
+on or following that line.</dd>
+<dt><code>RETURN</code></dt>
+<dd>Returns control to the statement following the most
+recently executed <code>GOSUB</code> to which control has
+not already been <code>RETURN</code>ed. <code>GOSUB-RETURN</code>
+pairs can be nested to any depth. If there is no such <code>GOSUB</code>,
+a runtime error occurs. As with FOR-NEXT, association of a <code>RETURN</code>
+with a <code>GOSUB</code> is dynamic; it cannot be
+statically determined in all cases.</dd>
+<dt><code>STOP</code></dt>
+<dd>Terminates execution with a message &nbsp;such as <code>!BREAK
+IN LINE 100</code>. In many older BASICs, and the ANSI standard, <code>END</code>
+is always the last line of the program, and <code>STOP</code>
+jumps to the <code>END</code> statement. Not so in Vintage
+BASIC. Instead its behavior is borrowed from Microsoft BASIC. The idea
+is that it is like <code>END</code>, except that variables
+are not cleared, so the user can inspect them for debugging purposes,
+and execution can be resumed using the <code>CONT</code>
+statement. However, this behavior requires a read-eval-print loop,
+which Vintage BASIC doesn't have.</dd>
+</dl>
+<h2><a class="mozTocH2" name="mozTocId193848"></a>Error Messages</h2>
+<dl><dt><code>!BAD GOSUB TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOSUB</code>.</dd><dt><code>!BAD GOTO TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOTO</code>.</dd><dt></dt><dt><code>!BAD RESTORE TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>RESTORE</code>.</dd><dt><code>!BREAK IN LINE </code><span style="font-style: italic;">label</span></dt>
+
+<dd>A <code>STOP</code> statement was encountered.</dd>
+<dt><code>!DIVISION BY ZERO IN LINE </code><span style="font-style: italic;">label</span></dt><dd>An attempt was made to divide by zero.</dd><dt><code>!END OF INPUT IN LINE </code><span style="font-style: italic;">label</span></dt><dd>An attempt to <code>INPUT</code> characters failed because the end of the standard input stream was reached.</dd><dt><code>!INVALID ARGUMENT IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The argument supplied to a builtin function was outside of the allowed range.</dd><dt><code>!LINE NUMBERING ERROR IN RAW LINE&nbsp;</code><span style="font-style: italic;">nn</span></dt>
+<dd>The line scanner could not properly read line numbers, or
+the file did not end in a newline.</dd>
+<dt><code>!MISMATCHED ARRAY DIMENSIONS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The
+number of indices used in an array reference does not match the number
+of bounds supplied in the DIM statement (1 if it was not dimensioned).</dd><dt><code>!NEGATIVE ARRAY DIM IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A negative value was supplied as an array index, or bound in a <code>DIM</code> statement.</dd><dt><code>!NEXT WITHOUT FOR ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A <code>NEXT</code> statement was encountered,
+but a matching <code>FOR</code> statement could not be
+found. Either a <code>FOR</code> statement was never
+encountered, or all <code>FOR</code> statements have
+reached their termination conditions.</dd>
+<dt><code>!NEXT WITHOUT FOR ERROR (VAR </code><span style="font-style: italic;">X</span><code>) IN
+LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A <code>NEXT</code> statement was encountered,
+but a matching <code>FOR</code> statement could not be
+found. Either a <code>FOR</code> statement with that
+control variable was never encountered, or all <code>FOR</code>
+statements with that control variable have reached their termination
+conditions.</dd>
+<dt></dt><dt><code>!OUT OF ARRAY BOUNDS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A supplied array index exceeded the bound for that dimension.</dd><dt><code>!OUT OF&nbsp;DATA IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A <code>READ</code> statement in this line tried to read data, but the <code>DATA</code> pointer has already reached the end of data strings in the program. You may have too few <code>DATA</code> statements, or a bad loop termination condition that causes too many <code>READ</code>s.</dd><dt><code>!REDIM'D ARRAY IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A <code>DIM</code> statement was encountered, but the array has already been dimensioned, either explicitly (through anorther <code>DIM</code> statement), or automatically (through reference to the array).</dd><dt><code>!RETURN WITHOUT GOSUB ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A <code>RETURN</code> statement was
+encountered, but a matching <code>GOSUB</code> statement
+could not be found. Either a <code>GOSUB</code> statement
+was never encountered, or all <code>GOSUB</code>
+statements have already been <code>RETURN</code>ed to.</dd>
+<dt><code>!SYNTAX ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The program did not meet valid <a href="#Basic_Syntax">syntax
+requirements</a>. The error may contain more details as to what
+symbols were found or expected.</dd><dt><code>!TYPE MISMATCH IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The
+type of an expression was not the type expected by the surrounding
+context, whether it be an operator, builtin function, user-defined
+function, array, or statement that requires an expression. In a <code>READ</code> statement, the type of the variable did not match the value read.</dd><dt><code>!UNDEFINED FUNCTION </code><span style="font-style: italic;">X</span><code> IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The user-defined function was called via <code>FN</code> but has never been defined by <code>DEF FN</code>.</dd><dt><code>!WRONG NUMBER OF ARGUMENTS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The wrong number of arguments were passed to the builtin or user-defined function.</dd></dl></body></html>

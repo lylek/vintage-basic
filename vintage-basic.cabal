@@ -20,7 +20,7 @@ Maintainer:         lyle@vintage-basic.net
 Homepage:           http://www.vintage-basic.net
 Build-Type:         Simple
 Tested-With:        GHC==6.10.1
-Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt
+Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt doc/*
 
 Executable vintbas
   Main-is:        Basic.hs

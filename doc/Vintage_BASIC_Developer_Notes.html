@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC Developer's Guide</title></head>
+<body><h1>Vintage BASIC Developer Notes</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>I began Vintage BASIC as a class project at the <a href="http://www.ogi.edu">Oregon Graduate
+Institute</a>. My aim was to demonstrate advanced knowledge of monads in
+<a href="http://www.haskell.org">Haskell</a>.
+It occurred to me that BASIC's dynamic control structures would be
+interesting to interpret using a custom monad. Soon, using a
+continuation-passing style monad as a basic, I was able to construct an
+advanced form of exception handler that was ideal for implementing the
+BASIC control structures in a new way.</p><h2>Durable Traps</h2><p>Most languages, like C,
+have lexical control structures. It can be determined statically where
+the boundaries of a loop lie. But BASIC's control flow statements are
+read and interpreted one by one at runtime. Traditionally, a <code>GOSUB</code> pushes a pointer to the next statement onto the stack, and <code>RETURN</code> pops that pointer off the stack to return to that position. Any <code>RETURN</code> in the program could be associated with any <code>GOSUB</code>, if the right <code>GOTO</code>s are sprinkled about.</p><p>Instead of using the traditional stack-based method of implementing <code>GOSUB-RETURN</code>, I implemented <code>GOSUB</code> as an exception handler, and <code>RETURN</code> raises an exception to be caught by the <code>GOSUB</code>. Similarly, <code>FOR</code> is an exception handler, and <code>NEXT</code> raises a special exception to be caught by the <code>FOR</code>.
+This is not too different from the stack-based approach, because a
+pointer stack has been replaced by a handler stack. However, the code
+is higher-level and more generalizable. It flows well in Haskell's
+monadic <code>do</code> notation.</p><p>Simple Java-like exceptions
+will not suffice. For one thing, they require a nested block of code
+from which exceptions will be caught. But BASIC has no lexical nesting.
+In principle, we want to catch exceptions that occur later in
+execution. In other words, we want to catch exceptions from the
+continuation of the handler. My new exception handlers can be used in
+either way: to <span style="font-style: italic;">catch</span> exceptions from within an expression, or to <span style="font-style: italic;">trap</span> exceptions from the handler's continuation. I refer to it as trapping because it works much like a <code>trap</code> statement in Bourne shell.</p><p>There
+are three actions an exception handler may take. In case an exception
+does not apply to the exception handler, it needs to <span style="font-style: italic;">pass on</span> the exception to the next outer handler. When a <code>NEXT</code> exception occurs, the loop termination condition may or may not be met. If it is not met, control flow will <span style="font-style: italic;">continue</span> following the handler (the interior of the loop). If it is met, control&nbsp;should <span style="font-style: italic;">resume</span> with the statement following the <code>NEXT</code>.</p><p>There is one more behavior of a handler to consider: whether or not it remains in force. When a <code>NEXT</code> leads to another loop iteration, the handler should remain in force. When the <code>FOR</code> loop is complete, the handler should not remain in force. I refer to this feature as <span style="font-style: italic;">durability</span> and say that in the first case, the handler <span style="font-style: italic;">endures</span>, while in the second case it does not endure.</p><p>The exception handlers provided in Control.Monad.CPST.DurableTraps, <code>catchC</code> and <code>trap</code>, are used to catch or trap exceptions, respectively. Each one is passed, along with the exception, three functions called <code>passOn</code>, <code>resume</code>, and <code>continue</code>, corresponding to the three desired courses of action. Each of those functions takes a boolean parameter <code>endure</code>, which can be set to <code>True</code> to keep the handler in force or <code>False</code> to remove it from the handler stack.</p><h2>Parsing</h2><p>Although I originally hand-rolled a parser, I eventually moved to <a href="http://legacy.cs.uu.nl/daan/download/parsec/parsec.html">Parsec</a> for better performance and error handling. I chose to implement the parsing in three layers. The <span style="font-style: italic;">line scanner</span> layer recognizes BASIC line numbers and allows the lines to be sorted by line number without parsing the rest of the line. The <span style="font-style: italic;">tokenizer</span>
+locates and tokenizes keywords in each line, without tokenizing
+variable names. I did this so that BASIC code could be written without
+spaces between the keywords and variables, as the Commodore 64 allowed.
+Finally, the <span style="font-style: italic;">parser</span> does the rest of the work, building up statements and expressions.</p><p>I
+took care to make the syntax errors look reasonably old-fashioned.
+However, they do provide a bit more information than the old BASICs
+would have. Because Parsec provides it, they detail the error position
+and the found/expected tokens.</p></body></html>
