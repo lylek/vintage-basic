@@ -164,7 +164,7 @@ exprP = buildExpressionParser opTable primXP
 
 letSP :: TokParser Statement
 letSP = do
-    skip0or1 (tokenP (==LetTok))
+    optionally (tokenP (==LetTok))
     v <- varP
     tokenP (==EqTok)
     x <- exprP
@@ -245,9 +245,6 @@ printSP =
        xs <- option [] printSPExprs
        (tokenP (==SemiTok) >> return (PrintS xs False))
            <|> return (PrintS xs True)
-
-optionally :: GenParser tok st a -> GenParser tok st (Maybe a)
-optionally p = option Nothing (p >>= return . Just)
 
 printSPExprs :: TokParser [Expr]
 printSPExprs =

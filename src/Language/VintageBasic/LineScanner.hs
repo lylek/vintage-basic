@@ -8,9 +8,14 @@ import Language.VintageBasic.LexCommon
 
 type RawLine = Tagged String
 
+eol :: Parser Char
+eol = do
+    optionally (char '\r')
+    newline
+
 blankLineP :: Parser ()
 blankLineP = do
-    newline <?> ""
+    eol <?> ""
     whiteSpace
 
 rawLineP :: Parser RawLine
@@ -18,7 +23,7 @@ rawLineP = do
     n <- labelP
     whiteSpace
     pos <- getPosition
-    s <- manyTill (anyChar <?> "CHARACTER") (newline <?> "NEW-LINE")
+    s <- manyTill (anyChar <?> "CHARACTER") (eol <?> "NEW-LINE")
     whiteSpace
     many blankLineP
     return (Tagged (setSourceLine pos n) s)

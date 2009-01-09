@@ -27,3 +27,7 @@ test_reports_error_if_file_doesn't_end_in_newline = TestCase $ do
 test_accepts_blank_line = TestCase $ do
   let text = unlines ["10"]
   assertRawParseResult text [(10, 3, "")]
+
+test_strips_carriage_return_preceding_newline = TestCase $ do
+  let text = "10 BLAH\r\n20 BLORT\r\n"
+  assertRawParseResult text [(10, 4, "BLAH"), (20, 4, "BLORT")]

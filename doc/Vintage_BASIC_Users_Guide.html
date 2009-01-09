@@ -2,7 +2,7 @@
 <html><head>
 <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC User's Guide</title></head>
 <body>
-<h1>Vintage BASIC User's Guide</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>Congratulations on installing Vintage BASIC! You are now the
+<h1>Vintage BASIC User's Guide 1.0</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>Congratulations on installing Vintage BASIC! You are now the
 proud owner of a copy of a versatile tool for BASIC development.</p><p>Vintage BASIC is a language derived from the Microsoft's
 original <a href="http://en.wikipedia.org/wiki/Altair_BASIC">Altair
 BASIC</a>.
@@ -31,8 +31,10 @@ Expressions</a><ul><li><a href="#mozTocId235686">Operator Precedence and Associa
 Statements</a></li><li><a href="#mozTocId193848">Error Messages</a></li></ul><h2><a class="mozTocH2" name="mozTocId731362"></a>System Requirements and Installation</h2>
 <p>Vintage BASIC requires minimal resources, and will run on any
 platform with available Haskell compiler. The recommended compiler is <a href="http://www.haskell.org/ghc">GHC</a>. You can
-also download some pre-compiled binaries on the web site, <a href="http://www.vintage-basic.net">vintage-basic.net</a>.</p>
-<h2><a class="mozTocH2" name="mozTocId230604"></a>Running Vintage BASIC</h2>
+also download some pre-compiled binaries on the web site, <a href="http://www.vintage-basic.net">vintage-basic.net</a>.</p><h3>Installation of&nbsp;binary version</h3>For Windows, you can simply download <code>vintbas.exe</code>, and put it it somewhere in your path.<br><h3>Installation from source</h3><p>You can download the source code tarball,&nbsp; <code>vintage-basic-1.0.tar.gz</code>,&nbsp;from either <a href="http://www.vintage-basic.net/downloads.html">vintage-basic.net</a> or <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/vintage-basic">Hackage</a>.</p><p>You should first unpack the tarball&nbsp;<code></code>using
+a tool such as tar, 7-Zip or WinZip. Then open a shell/console&nbsp;in
+the vintage-basic-1.0 directory, and type:
+http://hackage.haskell.org/packages/archive/armada/0.1/armada-0.1.tar.gz<br><br><code>&nbsp;&nbsp;runhaskell Setup.hs configure<br>&nbsp; runhaskell Setup.hs build</code></p><p>The executable will be generated in <code>dist/build/vintbas/vintbas</code> on Mac/Linux, or <code>dist\build\vintbas\vintbas.exe</code> on Windows. You can then move this executable anywhere in your path to run it.</p><h2><a class="mozTocH2" name="mozTocId230604"></a>Running Vintage BASIC</h2>
 <p>The interpreter consists of one command-line tool, <code><span class="">vintbas</span></code> (<code>vintbas.exe</code>
 on Windows). It can take any number of filename parameters, each one
 the name of a BASIC source file. By convention (but not fiat), those

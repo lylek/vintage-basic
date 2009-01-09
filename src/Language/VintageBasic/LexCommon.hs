@@ -30,6 +30,7 @@ labelP = do
     s <- many1 (digit <?> "") <?> "LINE NUMBER"
     return (read s)
 
--- | Parser that skips text specified by another parser, if present.
-skip0or1 :: GenParser tok st a -> GenParser tok st ()
-skip0or1 parser = (parser >> return ()) <|> return ()
+-- | Parser tries to apply another parser, returning Just the result
+-- on a match, or Nothing in the case of failure.
+optionally :: GenParser tok st a -> GenParser tok st (Maybe a)
+optionally p = option Nothing (p >>= return . Just)

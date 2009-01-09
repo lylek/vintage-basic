@@ -20,7 +20,7 @@ Maintainer:         lyle@vintage-basic.net
 Homepage:           http://www.vintage-basic.net
 Build-Type:         Simple
 Tested-With:        GHC==6.10.1
-Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt doc/*
+Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt doc/*.html
 
 Executable vintbas
   Main-is:        Basic.hs
@@ -37,4 +37,4 @@ Executable vintbas
                   regex-posix >=0.72,
                   filepath >=1.1
   HS-Source-Dirs: src
-  GHC-Options:    -Wall -O2
+  GHC-Options:    -Wall
