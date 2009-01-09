@@ -22,7 +22,7 @@ test_skips_blank_lines = TestCase $ do
  
 test_reports_error_if_file_doesn't_end_in_newline = TestCase $ do
   let text = "10SKDJF@#"
-  assertRawParseError text "UNEXPECTED END OF FILE\n EXPECTING NEW-LINE OR CHARACTER"
+  assertRawParseError text "UNEXPECTED END OF FILE\n EXPECTING END OF LINE OR CHARACTER"
  
 test_accepts_blank_line = TestCase $ do
   let text = unlines ["10"]
