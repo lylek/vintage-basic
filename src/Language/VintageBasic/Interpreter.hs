@@ -91,17 +91,14 @@ liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
 liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
 liftFVOp2 _ _             _             = typeMismatch
 
-liftFVBOp2 :: (Float -> Float -> Bool) -> Val -> Val -> Code Val
-liftFVBOp2 f (FloatVal v1) (FloatVal v2) = return $ boolToVal $ f v1 v2
-liftFVBOp2 _ _             _             = typeMismatch
-
 liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
 liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
 liftSVOp2 _ _              _              = typeMismatch
 
-liftSVBOp2 :: (String -> String -> Bool) -> Val -> Val -> Code Val
-liftSVBOp2 f (StringVal v1) (StringVal v2) = return $ boolToVal $ f v1 v2
-liftSVBOp2 _ _             _               = typeMismatch
+liftFSCmpOp2 :: (forall a. Ord a => a -> a -> Bool) -> Val -> Val -> Code Val
+liftFSCmpOp2 f v1 v2 = do
+    assert (typeOf v1 == typeOf v2) TypeMismatchError
+    return $ boolToVal $ f v1 v2
 
 valError :: RuntimeError -> Code Val
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work out.
@@ -160,16 +157,12 @@ evalBinOp op =
                         else return $ FloatVal $ fv1/fv2
                 (_,_) -> typeMismatch
         PowOp -> liftFVOp2 (**)
-        EqOp -> \v1 v2 ->
-            case (v1,v2) of
-                (FloatVal  _, FloatVal  _) -> liftFVBOp2 (==) v1 v2
-                (StringVal _, StringVal _) -> liftSVBOp2 (==) v1 v2
-                (_,           _          ) -> typeMismatch
-        NEOp -> liftFVBOp2 (/=)
-        LTOp -> liftFVBOp2 (<)
-        LEOp -> liftFVBOp2 (<=)
-        GTOp -> liftFVBOp2 (>)
-        GEOp -> liftFVBOp2 (>=)
+        EqOp -> liftFSCmpOp2 (==)
+        NEOp -> liftFSCmpOp2 (/=)
+        LTOp -> liftFSCmpOp2 (<)
+        LEOp -> liftFSCmpOp2 (<=)
+        GTOp -> liftFSCmpOp2 (>)
+        GEOp -> liftFSCmpOp2 (>=)
         AndOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 && v2/=0 then v1 else 0
         OrOp -> liftFVOp2 $ \v1 v2 -> if v1/=0 then v1 else v2
 

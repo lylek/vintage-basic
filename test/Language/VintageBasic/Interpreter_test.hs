@@ -75,13 +75,22 @@ test_arithmetic_expression = testProgramOutput "10 A=5:?A^2+3*A-1/2\n" " 39.5 \n
 
 test_parentheses = testProgramOutput "10 A=5:?A^(2+3)*(A-1)/2\n" " 6250 \n"
 
-test_relational_operators = TestList $ [
+test_relational_operators_on_numbers = TestList $ [
     "eq" ~: testProgramOutput "10 ?1= 1:?1= 2:?2= 1\n" "-1 \n 0 \n 0 \n",
     "ne" ~: testProgramOutput "10 ?1<>1:?1<>2:?2<>1\n" " 0 \n-1 \n-1 \n",
     "lt" ~: testProgramOutput "10 ?1< 1:?1< 2:?2< 1\n" " 0 \n-1 \n 0 \n",
     "le" ~: testProgramOutput "10 ?1<=1:?1<=2:?2<=1\n" "-1 \n-1 \n 0 \n",
     "gt" ~: testProgramOutput "10 ?1> 1:?1> 2:?2> 1\n" " 0 \n 0 \n-1 \n",
     "ge" ~: testProgramOutput "10 ?1>=1:?1>=2:?2>=1\n" "-1 \n 0 \n-1 \n"
+  ]
+
+test_relational_operators_on_strings = TestList $ [
+    "eq" ~: testProgramOutput "10 ?\"A\"= \"A\":?\"A\"= \"B\":?\"B\"= \"A\"\n" "-1 \n 0 \n 0 \n",
+    "ne" ~: testProgramOutput "10 ?\"A\"<>\"A\":?\"A\"<>\"B\":?\"B\"<>\"A\"\n" " 0 \n-1 \n-1 \n",
+    "lt" ~: testProgramOutput "10 ?\"A\"< \"A\":?\"A\"< \"B\":?\"B\"< \"A\"\n" " 0 \n-1 \n 0 \n",
+    "le" ~: testProgramOutput "10 ?\"A\"<=\"A\":?\"A\"<=\"B\":?\"B\"<=\"A\"\n" "-1 \n-1 \n 0 \n",
+    "gt" ~: testProgramOutput "10 ?\"A\"> \"A\":?\"A\"> \"B\":?\"B\"> \"A\"\n" " 0 \n 0 \n-1 \n",
+    "ge" ~: testProgramOutput "10 ?\"A\">=\"A\":?\"A\">=\"B\":?\"B\">=\"A\"\n" "-1 \n 0 \n-1 \n"
   ]
 
 test_boolean_logic = TestList $ [
@@ -577,5 +586,3 @@ test_def_fn = TestList [
 test_stop = testProgramOutput "1 ?1:STOP:?2\n" " 1 \n!BREAK IN LINE 1\n"
 
 test_rem = testProgramOutput "1 ?1:REM COMMENT:?2\n2 ?3\n" " 1 \n 3 \n"
-
--- test runtime errors
