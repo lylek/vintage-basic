@@ -388,10 +388,9 @@ to advance the cursor to the column number&nbsp;specified by the
 argument. Column numbers start with zero, which is consistent with
 Microsoft BASIC but not the ANSI standard, which starts with one
 instead. If the cursor is already past the desired column, the result
-string will begin with a newline, followed by the number of spaces
-required to reach the desired column. This behavior is consistent with
-the ANSI standard but not Microsoft BASIC, which fails to move the
-cursor in such cases.</dd>
+string will be empty. This behavior is consistent with
+Microsoft BASIC but not the ANSI standard, which specifies that the
+cursor should move to a new line before tabbing to the specified column.</dd>
 <dt><code>TAN(</code><span style="font-style: italic;">float</span><code>)</code></dt>
 <dd>Returns the tangent of the value.</dd>
 <dt><code>VAL(</code><span style="font-style: italic;">string</span><code>)</code></dt>
