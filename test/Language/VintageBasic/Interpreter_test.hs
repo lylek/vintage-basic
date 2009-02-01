@@ -466,8 +466,8 @@ test_print_literals = testProgramOutput "10 PRINT\"NUMBER\";5;\"AND\";-2\n" "NUM
 test_float_representation = testProgramOutput "10 ?1E17:?5.55555\n" " 1.E+17 \n 5.55555 \n"
 
 test_tab = testProgramOutput
-    "10 ?TAB(4);\"A\";TAB(10);\"B\";TAB(11);\"C\";TAB(11);\"D\"\n"
-    "    A     BC\n           D\n"
+    "10 ?TAB(4);\"A\";TAB(10);\"B\";TAB(11);\"C\";TAB(4);\"D\"\n"
+    "    A     BCD\n"
 
 test_tab_with_nonintegers = testProgramOutput "10 ?TAB(2.9);\"A\"\n" "  A\n"
 

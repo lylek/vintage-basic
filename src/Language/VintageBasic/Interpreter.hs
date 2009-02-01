@@ -270,7 +270,7 @@ evalBuiltin builtin args = case builtin of
             curCol <- getOutputColumn
             return $ StringVal $
                 if curCol > destCol
-                  then "\n" ++ replicate destCol ' '
+                  then ""
                   else replicate (destCol - curCol) ' '
     TanBI -> liftFVBuiltin1 tan args
     ValBI -> do
