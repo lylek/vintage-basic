@@ -53,6 +53,10 @@ test_parse_print_with_comma_separated_parts = goodStatements
     "PRINT\"hello\",\"there\""
     [(1,PrintS [LitX (StringLit "hello"), NextZoneX, LitX (StringLit "there")] True)]
  
+test_parse_print_with_a_comma_at_the_start = goodStatements
+    "PRINT,\"hello\""
+    [(1,PrintS [NextZoneX, LitX (StringLit "hello")] True)]
+
 test_parse_let = goodStatements
     "LETA=1"
     [(1,LetS (ScalarVar (VarName FloatType "A")) (LitX (FloatLit 1.0)))]

@@ -248,9 +248,7 @@ printSP =
 
 printSPExprs :: TokParser [Expr]
 printSPExprs =
-    do x <- exprP
-       xs' <- many (try (optionally (tokenP (==SemiTok)) >> printExprP))
-       return (x:xs')
+    many (try (optionally (tokenP (==SemiTok)) >> printExprP))
 
 printExprP :: TokParser Expr
 printExprP = nextZoneP <|> exprP
