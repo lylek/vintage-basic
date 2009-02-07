@@ -27,35 +27,39 @@ badExpr source expectedError = TestCase $
 
 test_parses_multiple_statements = goodStatements
     ":?::?: "
-    [(2,PrintS [] True), (5,PrintS [] True)]
+    [(2,PrintS []), (5,PrintS [])]
  
 test_parse_bare_print = goodStatements
     "PRINT"
-    [(1,PrintS [] True)]
+    [(1,PrintS [])]
  
 test_parse_print_string = goodStatements
     "PRINT\"hello\""
-    [(1,PrintS [LitX (StringLit "hello")] True)]
+    [(1,PrintS [LitX (StringLit "hello")])]
  
-test_parse_print_string_wo_newline = goodStatements
+test_parse_print_string_ending_in_semicolon = goodStatements
     "PRINT\"hello\";"
-    [(1,PrintS [LitX (StringLit "hello")] False)]
+    [(1,PrintS [LitX (StringLit "hello"), EmptySeparatorX])]
+ 
+test_parse_print_string_ending_in_comma = goodStatements
+    "PRINT\"hello\","
+    [(1,PrintS [LitX (StringLit "hello"), NextZoneX])]
  
 test_parse_print_with_semicolon_separated_parts = goodStatements
     "PRINT\"hello\";\"there\""
-    [(1,PrintS [LitX (StringLit "hello"), LitX (StringLit "there")] True)]
+    [(1,PrintS [LitX (StringLit "hello"), EmptySeparatorX, LitX (StringLit "there")])]
  
 test_parse_print_with_juxtaposed_parts = goodStatements
     "PRINT\"hello\"\"there\""
-    [(1,PrintS [LitX (StringLit "hello"), LitX (StringLit "there")] True)]
+    [(1,PrintS [LitX (StringLit "hello"), LitX (StringLit "there")])]
 
 test_parse_print_with_comma_separated_parts = goodStatements
     "PRINT\"hello\",\"there\""
-    [(1,PrintS [LitX (StringLit "hello"), NextZoneX, LitX (StringLit "there")] True)]
+    [(1,PrintS [LitX (StringLit "hello"), NextZoneX, LitX (StringLit "there")])]
  
 test_parse_print_with_a_comma_at_the_start = goodStatements
     "PRINT,\"hello\""
-    [(1,PrintS [NextZoneX, LitX (StringLit "hello")] True)]
+    [(1,PrintS [NextZoneX, LitX (StringLit "hello")])]
 
 test_parse_let = goodStatements
     "LETA=1"
@@ -111,7 +115,7 @@ test_parse_def_fn = goodStatements
 
 test_parse_fn = goodStatements
     "?FNAN2$(1,\"X\")"
-    [(1,PrintS [FnX (VarName StringType "AN2") [(LitX (FloatLit 1)), (LitX (StringLit "X"))]] True)]
+    [(1,PrintS [FnX (VarName StringType "AN2") [(LitX (FloatLit 1)), (LitX (StringLit "X"))]])]
 
 test_parse_end = goodStatements
     "END"

@@ -484,7 +484,7 @@ test_tab_wrongargs = testExpressions [
 
 test_print_zones = testProgramOutput
     "1 ?\"A\",\"B\",,\"C\":?\"123456789012345\",\"X\":?1,;:?2,:?,3\n"
-    "A             B                           C\n123456789012345             X\n 1             2            \n               3 \n"
+    "A             B                           C\n123456789012345             X\n 1             2                           3 \n"
 
 test_input = TestList [
     "multiple values and types" ~: testProgramOutputWithInput

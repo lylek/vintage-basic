@@ -91,6 +91,7 @@ printExpr (VarX var) = printVar var
 printExpr (FnX vn xs) = printVarName vn ++ printArgs xs
 printExpr (MinusX x) = "-" ++ printExpr x
 printExpr NextZoneX = ","
+printExpr EmptySeparatorX = ";"
 printExpr (NotX x) = "NOT " ++ printExpr x
 printExpr (ParenX x) = "(" ++ printExpr x ++ ")"
 printExpr (BinX op x1 x2) = printExpr x1 ++ printOp op ++ printExpr x2
@@ -118,9 +119,8 @@ printStatement (ForS vn x1 x2 x3) =
 printStatement (NextS Nothing) = "NEXT"
 printStatement (NextS (Just vns)) =
     "NEXT " ++ (concat $ intersperse "," (map printVarName vns))
-printStatement (PrintS xs t) =
-    "PRINT " ++ (concat $ intersperse ";" (map printExpr xs))
-         ++ (if t then "" else ";")
+printStatement (PrintS xs) =
+    "PRINT " ++ (concat $ intersperse " " (map printExpr xs))
 printStatement (InputS prompt vs) =
     "INPUT " ++ (case prompt of Nothing -> ""; Just ps -> show ps ++ ";")
          ++ (concat $ intersperse "," (map printVar vs))

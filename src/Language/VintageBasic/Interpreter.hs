@@ -136,6 +136,7 @@ eval NextZoneX = do
     curCol <- getOutputColumn
     let numSpaces = zoneWidth - (curCol `mod` zoneWidth)
     return $ StringVal $ replicate numSpaces ' '
+eval EmptySeparatorX = return $ StringVal ""
 eval (ParenX x) = eval x
 
 -- | Evaluate an expression with a binary operator.
@@ -301,10 +302,11 @@ interpS _ (LetS var x) = do
     val <- eval x
     setVar var val
 
-interpS _ (PrintS xs nl) = do
+interpS _ (PrintS xs) = do
     mapM (\x -> eval x >>= printVal) xs
-    -- check for type mismatches
-    if nl then printString "\n" else return ()
+    if null xs || not (isPrintSeparator (last xs))
+        then printString "\n"
+        else return ()
 
 interpS _ (InputS mPrompt vars) = do
     case mPrompt of

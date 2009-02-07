@@ -242,16 +242,16 @@ nextSP = do
 printSP :: TokParser Statement
 printSP =
     do tokenP (==PrintTok)
-       xs <- option [] printSPExprs
-       (tokenP (==SemiTok) >> return (PrintS xs False))
-           <|> return (PrintS xs True)
-
-printSPExprs :: TokParser [Expr]
-printSPExprs =
-    many (try (optionally (tokenP (==SemiTok)) >> printExprP))
+       xs <- many printExprP
+       return (PrintS xs)
 
 printExprP :: TokParser Expr
-printExprP = nextZoneP <|> exprP
+printExprP = emptySeparatorP <|> nextZoneP <|> exprP
+
+emptySeparatorP :: TokParser Expr
+emptySeparatorP = do
+    tokenP (==SemiTok)
+    return EmptySeparatorX
 
 nextZoneP :: TokParser Expr
 nextZoneP = do

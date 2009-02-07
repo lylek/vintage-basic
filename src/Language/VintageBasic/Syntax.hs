@@ -58,8 +58,14 @@ data Expr =
   | BinX BinOp Expr Expr
   | BuiltinX Builtin [Expr]
   | NextZoneX                -- ^ commas in a @PRINT@ statement
+  | EmptySeparatorX          -- ^ semicolons in a @PRINT@ statement
   | ParenX Expr
     deriving (Show,Eq)
+
+isPrintSeparator :: Expr -> Bool
+isPrintSeparator NextZoneX = True
+isPrintSeparator EmptySeparatorX = True
+isPrintSeparator _ = False
 
 -- | BASIC statements.
 data Statement =
@@ -73,7 +79,7 @@ data Statement =
   | IfS Expr [Tagged Statement] -- ^ includes all statements on the line following the @IF@
   | ForS VarName Expr Expr Expr
   | NextS (Maybe [VarName])
-  | PrintS [Expr] Bool -- ^ True if should print newline
+  | PrintS [Expr]
   | InputS (Maybe String) [Var]
   | EndS
   | StopS
