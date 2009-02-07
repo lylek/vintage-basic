@@ -552,14 +552,14 @@ statement (as in Microsoft BASIC but in violation of the ANSI standard,
 which prescribes a runtime error).</dd>
 <dt><code>PRINT</code> <span style="font-style: italic;">expr1</span><code>&nbsp;</code>[<code>;</code>|<code>,</code>]
 <span style="font-style: italic;">expr2</span> [<code>;</code>|<code>,</code>]<code></code>
-... [<code>;</code>]</dt>
+...<code></code></dt>
 <dd>Outputs text to the user. Multiple expressions can be
 separated by semicolons or commas. Semicolons leave no space between
 printed expressions. A comma is used to align text neatly in columns;
 it forces the next output column to be the start of the next print
 zone. Print zones are always 14 characters wide. A newline will be
 automatically printed at the end of the line, unless the <code>PRINT</code>
-statement ends in a semicolon (a comma will not have this effect). Floating-point values are automatically
+statement ends in a semicolon or comma. Floating-point values are automatically
 padded with one trailing space, and positive values are also padded
 with a leading space, so that they take up the same amount of space as
 negative numbers. Example: <code>PRINT "TURN";TU, "YOU
