@@ -598,21 +598,14 @@ a runtime error occurs. As with FOR-NEXT, association of a <code>RETURN</code>
 with a <code>GOSUB</code> is dynamic; it cannot be
 statically determined in all cases.</dd>
 <dt><code>STOP</code></dt>
-<dd>Terminates execution with a message &nbsp;such as <code>!BREAK
-IN LINE 100</code>. In many older BASICs, and the ANSI standard, <code>END</code>
-is always the last line of the program, and <code>STOP</code>
-jumps to the <code>END</code> statement. Not so in Vintage
-BASIC. Instead its behavior is borrowed from Microsoft BASIC. The idea
-is that it is like <code>END</code>, except that variables
-are not cleared, so the user can inspect them for debugging purposes,
-and execution can be resumed using the <code>CONT</code>
-statement. However, this behavior requires a read-eval-print loop,
-which Vintage BASIC doesn't have.</dd>
+<dd><code></code>In early BASICs, the <code>END</code> statement could only appear at the end of the program. The <code>STOP</code> statement was designed to send control to that solitary <code>END</code> statement. Vintage BASIC imitates this behavior by treating the <code>STOP</code> statement as an <code>END</code>. This is unlike Microsoft version of BASIC, in which <code>STOP</code> is used to terminate the program without clearing variables, so that they can be inspected for debugging purpose, and the <code>CONT</code>
+statement can resume control where it left off. That wouldn't be very
+useful in Vintage BASIC, since it does not have a read-eval-print loop.</dd>
 </dl>
 <h2><a class="mozTocH2" name="mozTocId193848"></a>Error Messages</h2>
 <dl><dt><code>!BAD GOSUB TARGET </code><span style="font-style: italic;">label1</span><code>
 in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOSUB</code>.</dd><dt><code>!BAD GOTO TARGET </code><span style="font-style: italic;">label1</span><code>
-in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOTO</code>.</dd><dt></dt><dt><code>!BAD RESTORE TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOTO</code>.</dd><dt><code>!BAD RESTORE TARGET </code><span style="font-style: italic;">label1</span><code>
 in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>RESTORE</code>.</dd><dt><code>!BREAK IN LINE </code><span style="font-style: italic;">label</span></dt>
 
 <dd>A <code>STOP</code> statement was encountered.</dd>

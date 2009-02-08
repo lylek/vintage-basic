@@ -583,6 +583,6 @@ test_def_fn = TestList [
         "!UNDEFINED FUNCTION A IN LINE 1\n"
   ]
 
-test_stop = testProgramOutput "1 ?1:STOP:?2\n" " 1 \n!BREAK IN LINE 1\n"
+test_stop = testProgramOutput "1 ?1:STOP:?2\n" " 1 \n"
 
 test_rem = testProgramOutput "1 ?1:REM COMMENT:?2\n2 ?3\n" " 1 \n 3 \n"

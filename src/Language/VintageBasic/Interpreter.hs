@@ -294,7 +294,7 @@ interpS _ (RemS _) = return ()
 
 interpS _ EndS = end
 
-interpS _ StopS = raiseRuntimeException Suspend
+interpS _ StopS = end
 
 interpS _ (DimS arrs) = mapM_ interpDim arrs
 
