@@ -553,25 +553,6 @@ test_read_data = TestList [
         "A:?7\nmore\n 5 \n"
   ]
 
-test_inp = TestList [
-    "wrong num args" ~: testProgramOutputWithInput
-        "1 ?INP()\n"
-        "ABC"
-        "!WRONG NUMBER OF ARGUMENTS IN LINE 1\n",
-    "type mismatch" ~: testProgramOutputWithInput
-        "1 ?INP(\"A\")\n"
-        "ABC"
-        "!TYPE MISMATCH IN LINE 1\n",
-    "valid" ~: testProgramOutputWithInput
-        "1 ?INP(1);\"X\";INP(1)\n"
-        "ABC"
-        " 65 X 66 \n",
-    "EOF" ~: testProgramOutputWithInput
-        "1 ?INP(1)\n"
-        ""
-        "!END OF INPUT IN LINE 1\n"
-  ]
-
 test_restore = testProgramOutput
     (unlines [
         "1 READ A,B,C:RESTORE 3:READ D,E:RESTORE:READ F,G,H:?A:?B:?C:?D:?E:?F:?G:?H\n",

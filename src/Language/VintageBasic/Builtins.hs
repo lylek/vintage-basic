@@ -4,9 +4,8 @@ module Language.VintageBasic.Builtins where
 
 -- | An enumeration of BASIC's builtin functions.
 data Builtin =
-    AbsBI | AscBI | AtnBI | ChrBI | CosBI | ExpBI | InpBI | IntBI | LeftBI | LenBI | LogBI
-    | MidBI | RightBI | RndBI | SgnBI | SinBI | SpcBI | StrBI | SqrBI | TabBI | TanBI
-    | ValBI
+    AbsBI | AscBI | AtnBI | ChrBI | CosBI | ExpBI | IntBI | LeftBI | LenBI | LogBI | MidBI
+    | RightBI | RndBI | SgnBI | SinBI | SpcBI | StrBI | SqrBI | TabBI | TanBI | ValBI
     deriving (Show,Eq)
 
 -- | An association list mapping BASIC builtins to their string representation.
@@ -19,7 +18,6 @@ builtinToStrAssoc = [
     (ChrBI,   "CHR$"  ),
     (CosBI,   "COS"   ),
     (ExpBI,   "EXP"   ),
-    (InpBI,   "INP"   ),
     (IntBI,   "INT"   ),
     (LeftBI,  "LEFT$" ),
     (LenBI,   "LEN"   ),

@@ -6,7 +6,6 @@
 module Language.VintageBasic.Interpreter(interpLines) where
 
 import Control.Monad.CPST.DurableTraps
-import Data.Char(ord)
 import Data.List
 import Data.Maybe
 import Language.VintageBasic.Builtins(Builtin(..))
@@ -198,13 +197,6 @@ evalBuiltin builtin args = case builtin of
             else return $ StringVal [toEnum iv]
     CosBI -> liftFVBuiltin1 cos args
     ExpBI -> liftFVBuiltin1 exp args
-    InpBI -> do
-        checkArgTypes [FloatType] args
-        let [FloatVal fv] = args
-        let iv = floatToInt fv
-        assert (iv==1) InvalidArgumentError
-        c <- getNextChar
-        return (FloatVal (fromIntegral (ord c)))
     IntBI -> liftFVBuiltin1 (fromIntegral . floatToInt) args
     LeftBI -> do
         checkArgTypes [StringType, FloatType] args
