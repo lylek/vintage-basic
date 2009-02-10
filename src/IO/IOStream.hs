@@ -15,17 +15,19 @@ class IOStream' h where
     vSetContents :: h -> String -> IO ()
     vPutStr :: h -> String -> IO ()
     vFlush :: h -> IO ()
+    vGetChar :: h -> IO Char
     vGetLine :: h -> IO String
     vIsEOF :: h -> IO Bool
 
 -- | An instance of IOStream' for IO Handles.
 instance IOStream' Handle where
-    vGetContents = hGetContents
+    vGetContents     = hGetContents
     vSetContents h s = hSetFileSize h 0 >> hPutStr h s
-    vPutStr  = hPutStr
-    vFlush   = hFlush
-    vGetLine = hGetLine
-    vIsEOF   = hIsEOF
+    vPutStr          = hPutStr
+    vFlush           = hFlush
+    vGetChar h       = hSetBuffering h NoBuffering >> hGetChar h
+    vGetLine h       = hSetBuffering h LineBuffering >> hGetLine h
+    vIsEOF           = hIsEOF
 
 -- | An instance for IOStream' for references to Strings.
 instance IOStream' (IORef String) where
@@ -33,6 +35,11 @@ instance IOStream' (IORef String) where
     vSetContents h s = writeIORef h s
     vPutStr h s = modifyIORef h (\text -> text ++ s)
     vFlush _ = return ()
+    vGetChar h = do
+        text <- readIORef h
+        let (c:text') = text
+        writeIORef h text'
+        return c
     vGetLine h = do
         text <- readIORef h
         let (s, text') = span (/= '\n') text
@@ -57,5 +64,6 @@ instance IOStream' IOStream where
     vSetContents (IOStream h) = vSetContents h
     vPutStr (IOStream h) = vPutStr h
     vFlush (IOStream h) = vFlush h
+    vGetChar (IOStream h) = vGetChar h
     vGetLine (IOStream h) = vGetLine h
     vIsEOF (IOStream h) = vIsEOF h

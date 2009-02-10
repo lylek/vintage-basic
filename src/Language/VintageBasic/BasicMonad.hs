@@ -235,14 +235,21 @@ getOutputColumn = do
     state <- get
     return $ outputColumn state
 
+-- | Gets a single character from the input stream.
+getNextChar :: Code Char
+getNextChar = getInput vGetChar
+
 -- | Gets an input line, raising an exception if we are at EOF.
 getString :: Code String
-getString = do
+getString = getInput vGetLine
+
+getInput :: (IOStream -> IO b) -> Code b
+getInput f = do
     state <- get
     liftIO $ vFlush (outputStream state)
     eof <- liftIO $ vIsEOF (inputStream state)
     assert (not eof) EndOfInputError
-    liftIO $ vGetLine (inputStream state)
+    liftIO $ f (inputStream state)
 
 -- | The number of seconds that have elapsed since midnight (local time).
 secondsSinceMidnight :: Code Int

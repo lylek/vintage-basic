@@ -26,3 +26,14 @@ test_output_column =
         printString "\n"
         col3 <- getOutputColumn
         printString (intercalate ";" [show c | c <- [col1, col2, col3]])
+
+test_getNextChar = TestCase $ do
+    input <- mkInput "abc"
+    output <- mkOutput
+    runProgram input output $ do
+        c1 <- getNextChar 
+        c2 <- getNextChar 
+        c3 <- getNextChar 
+        printString [c3,c1,c2]
+        done
+    assertOutputEq output "cab"
