@@ -506,11 +506,16 @@ checkArrInds indVals = do
 
 showVal :: Val -> String
 showVal (FloatVal fv) = printFloat fv
-showVal (IntVal iv) = if iv > 0 then " " else "" ++ show iv ++ " "
+showVal (IntVal iv) = if iv > 0 then " " else "" ++ show iv
 showVal (StringVal s) = s
 
 printVal :: Val -> Basic o ()
-printVal v = printString (showVal v)
+printVal v =
+  printString (showVal v ++ case v of
+      (FloatVal _)  -> " "
+      (IntVal _)    -> " "
+      (StringVal _) -> ""
+  )
 
 -- | Extract the @DATA@ strings from a program line.
 dataFromLine :: Line -> [String]

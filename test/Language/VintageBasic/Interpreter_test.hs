@@ -325,8 +325,8 @@ test_sqr = testExpressions [
 test_str = testExpressions [
     ("STR$()", "!WRONG NUMBER OF ARGUMENTS IN LINE 1"),
     ("STR$(\"ABC\")", "!TYPE MISMATCH IN LINE 1"),
-    ("STR$(1E2)", " 100 "),
-    ("STR$(.000000001)", " 1.E-9 "),
+    ("STR$(1E2)", " 100"),
+    ("STR$(.000000001)", " 1.E-9"),
     ("STR$(1,1)", "!WRONG NUMBER OF ARGUMENTS IN LINE 1")
   ]
 

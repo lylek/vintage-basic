@@ -19,9 +19,9 @@ printLit (StringLit s) = show s
 
 -- | Prettyprint a floating point value, BASIC style.
 printFloat :: Float -> String
-printFloat x | x == 0 = " 0 "
-printFloat x | x < 0  = "-" ++ printPosFloat (-x) ++ " "
-printFloat x | x > 0  = " " ++ printPosFloat x    ++ " "
+printFloat x | x == 0 = " 0"
+printFloat x | x < 0  = "-" ++ printPosFloat (-x)
+printFloat x | x > 0  = " " ++ printPosFloat x
 printFloat _ = error "illegal number for printFloat"
 
 -- | The maximum number of decimal digits needed to display the mantissa of a
