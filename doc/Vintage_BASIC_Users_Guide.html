@@ -1,9 +1,15 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
-<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC User's Guide</title></head>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC User's Guide</title>
+
+</head>
 <body>
-<h1>Vintage BASIC User's Guide 1.0</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>Congratulations on installing Vintage BASIC! You are now the
-proud owner of a copy of a versatile tool for BASIC development.</p><p>Vintage BASIC is a language derived from the Microsoft's
+<h1>Vintage BASIC User's Guide 1.0</h1>
+<p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle
+Kopnicky</a></p>
+<p>Congratulations on installing Vintage BASIC! You are now the
+proud owner of a copy of a versatile tool for BASIC development.</p>
+<p>Vintage BASIC is a language derived from the Microsoft's
 original <a href="http://en.wikipedia.org/wiki/Altair_BASIC">Altair
 BASIC</a>.
 It would feel right at home on a Commodore 64. The design tensions of
@@ -17,24 +23,70 @@ found on the&nbsp;Commodore 64.</li>
 <li>Be informed by (but not always stick to) the ANSI Minimal
 BASIC standard (ANSI X.360-1978).</li>
 <li>Relax constraints in the language where it is easy to do so
-without compromising compatibility.</li></ul>Vintage BASIC is written in <a href="http://www.haskell.org">Haskell</a>.
+without compromising compatibility.</li>
+</ul>
+Vintage BASIC is written in <a href="http://www.haskell.org">Haskell</a>.
 Haskell has a feature called monads, which aid in constructing custom
 control structures. The interpreter handles BASIC's dynamic
 control structures by using an advanced form of exception, rather than
 the traditional
-stack.<br><br>Early BASICs used an interactive prompt for editing
+stack.<br>
+<br>
+Early BASICs used an interactive prompt for editing
 program text. Vintage BASIC allows you to use your own text editor.
 However, it still supports the line numbers of traditional BASIC, as
-targets for control flow.<br><br><span style="font-weight: bold;">Table of Contents</span><br><ul id="mozToc"><!--mozToc h2 1 h3 2 h4 3 h5 4 h6 5 h6 6--><li><a href="#mozTocId731362">System Requirements and Installation</a></li><li><a href="#mozTocId230604">Running Vintage BASIC</a></li><li><a href="#mozTocId153285">BASIC
-Program Lines</a></li><li><a href="#mozTocId839205">BASIC Syntax</a></li><li><a href="#mozTocId277885">BASIC Types</a></li><li><a href="#mozTocId116379">BASIC
-Expressions</a><ul><li><a href="#mozTocId235686">Operator Precedence and Associativity</a></li><li><a href="#mozTocId251348">Builtin Functions</a></li></ul></li><li><a href="#mozTocId829004">BASIC
-Statements</a></li><li><a href="#mozTocId193848">Error Messages</a></li></ul><h2><a class="mozTocH2" name="mozTocId731362"></a>System Requirements and Installation</h2>
+targets for control flow.<br>
+<br>
+<span style="font-weight: bold;">Table of Contents</span><br>
+<ul id="mozToc">
+<!--mozToc h2 1 h3 2 h4 3 h5 4 h6 5 h6 6--><li><a href="#mozTocId731362">System Requirements and Installation</a></li>
+<li><a href="#mozTocId230604">Running Vintage BASIC</a></li>
+<li><a href="#mozTocId153285">BASIC
+Program Lines</a></li>
+<li><a href="#mozTocId839205">BASIC Syntax</a></li>
+<li><a href="#mozTocId277885">BASIC Types</a></li>
+<li><a href="#mozTocId116379">BASIC
+Expressions</a>
+<ul>
+<li><a href="#mozTocId235686">Operator
+Precedence and Associativity</a></li>
+<li><a href="#mozTocId251348">Builtin Functions</a></li>
+</ul>
+</li>
+<li><a href="#mozTocId829004">BASIC
+Statements</a></li>
+<li><a href="#mozTocId193848">Error Messages</a></li>
+</ul>
+<h2><a class="mozTocH2" name="mozTocId731362"></a>System
+Requirements and Installation</h2>
 <p>Vintage BASIC requires minimal resources, and will run on any
 platform with available Haskell compiler. The recommended compiler is <a href="http://www.haskell.org/ghc">GHC</a>. You can
-also download some pre-compiled binaries on the web site, <a href="http://www.vintage-basic.net">vintage-basic.net</a>.</p><h3>Installation of&nbsp;binary version</h3>For Windows, you can simply download <code>vintbas.exe</code>, and put it it somewhere in your path.<br><h3>Installation from source</h3><p>You can download the source code tarball,&nbsp; <code>vintage-basic-1.0.tar.gz</code>,&nbsp;from either <a href="http://www.vintage-basic.net/downloads.html">vintage-basic.net</a> or <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/vintage-basic">Hackage</a>.</p><p>You should first unpack the tarball&nbsp;<code></code>using
-a tool such as tar, 7-Zip or WinZip. Then open a shell/console&nbsp;in
+also download some pre-compiled binaries on the web site, <a href="http://www.vintage-basic.net">vintage-basic.net</a>.</p>
+<h3>Installation of&nbsp;binary version</h3>
+For Windows, you can simply download <code>vintbas.exe</code>,
+and put it it somewhere in your path. For other systems, consult the <a href="http://www.vintage-basic.net/download.html">download page</a>.<br>
+<h3>Installation from source</h3>
+<p>You can download the source code tarball,&nbsp; <code>vintage-basic-1.0.tar.gz</code>,&nbsp;from
+either <a href="http://www.vintage-basic.net/downloads.html">vintage-basic.net</a>
+or <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/vintage-basic">Hackage</a>.</p>
+<p>You should first unpack the tarball&nbsp;<code></code>using
+a tool such as tar, 7-Zip or WinZip. Then open a
+shell/console&nbsp;in
 the vintage-basic-1.0 directory, and type:
-http://hackage.haskell.org/packages/archive/armada/0.1/armada-0.1.tar.gz<br><br><code>&nbsp;&nbsp;runhaskell Setup.hs configure<br>&nbsp; runhaskell Setup.hs build</code></p><p>The executable will be generated in <code>dist/build/vintbas/vintbas</code> on Mac/Linux, or <code>dist\build\vintbas\vintbas.exe</code> on Windows. You can then move this executable anywhere in your path to run it.</p><h2><a class="mozTocH2" name="mozTocId230604"></a>Running Vintage BASIC</h2>
+http://hackage.haskell.org/packages/archive/armada/0.1/armada-0.1.tar.gz<br>
+<br>
+<code>&nbsp;&nbsp;runhaskell Setup.hs configure<br>
+&nbsp; runhaskell Setup.hs build</code></p>
+<p>The executable will be generated in <code>dist/build/vintbas/vintbas</code>
+on Mac/Linux, or <code>dist\build\vintbas\vintbas.exe</code>
+on Windows. You can then move this executable anywhere in your path to
+run it. Or, use</p>
+<p><code>&nbsp;&nbsp;runhaskell Setup.hs install</code></p>
+<p>See the <a href="http://haskell.org/haskellwiki/Cabal/How_to_install_a_Cabal_package">Cabal
+package installation instructions</a> for more details.<br>
+</p>
+<h2><a class="mozTocH2" name="mozTocId230604"></a>Running
+Vintage BASIC</h2>
 <p>The interpreter consists of one command-line tool, <code><span class="">vintbas</span></code> (<code>vintbas.exe</code>
 on Windows). It can take any number of filename parameters, each one
 the name of a BASIC source file. By convention (but not fiat), those
@@ -68,7 +120,8 @@ lines, when an <code>END</code> or <code>STOP</code>
 statement is encountered, or when an error occurs. Errors may occur
 during parsing or execution, and always being with an exclamation point
 (<code>!</code>).</p>
-<h2><a class="mozTocH2" name="mozTocId839205"></a>BASIC Syntax</h2>
+<h2><a class="mozTocH2" name="mozTocId839205"></a>BASIC
+Syntax</h2>
 Each line of BASIC consists of a series of statements, separated by
 semicolons. Statements are executed in order, unless an error or
 control flow statement is encountered.
@@ -92,7 +145,8 @@ variable names, which might accidentally contain keywords. For example,
 <code>FACTOR</code> contains the keyword <code>TO</code>.
 Experience shows that people can get used to reading code without
 spaces.</p>
-<h2><a class="mozTocH2" name="mozTocId277885"></a>BASIC Types</h2>
+<h2><a class="mozTocH2" name="mozTocId277885"></a>BASIC
+Types</h2>
 Vintage BASIC has a simple type system. In expressions, all values are
 either floating-point or string. Variables can additionally hold
 integers, which are converted to/from floating-point to be used in
@@ -168,7 +222,8 @@ and might contain some other value.<span style="font-style: italic;"></span></dd
 Defined using <code>DEF FN</code> statements, they are
 accessed in expressions by preceding the function name with the <code>FN</code>
 keyword. Example: <code>FN A(4)</code> calls the
-floating-point user-defined function <code>A</code> with argument value <code>4</code>.</dd>
+floating-point user-defined function <code>A</code> with
+argument value <code>4</code>.</dd>
 <dt><span style="font-style: italic;">builtin</span><code>(</code><span style="font-style: italic;">expr1</span><code>,</code>
 <span style="font-style: italic;">expr2</span><code>,</code>
 ...<code>)</code></dt>
@@ -198,43 +253,35 @@ expression by the value of the second expression.</dd>
 value of the second expression. Division by zero is an error.</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>+</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Addition. Adds the value of the first expression to the
 value of the second expression.<br>
 </dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>-</code> <span style="font-style: italic;">expr2</span></dt>
-
-
 <dd>Subtraction. Subtracts the value of the second expression
 from the value of the first expression.</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>=</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Equality test. Evaluates to&nbsp;<code>0</code>
 if the two strings or numbers are equal, <code>-1</code>
 if they differ.</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>&lt;&gt;</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Inequality test. Evaluates to <code>-1</code>
 if the two strings or numbers are equal, <code>0</code> if
 they differ.</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>&lt;</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Less than. Evaluates to <code>-1</code> if the
 first string or number is less than the second, <code>0</code>
 otherwise. (Strings are compared alphabetically.)</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>&lt;=</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Less than or equal. Evaluates to <code>-1</code>&nbsp;if
 the first string or number is less than or equal to the second, <code>0</code>
 otherwise. (Strings are compared alphabetically.)</dd>
 <dt><span style="font-style: italic;">expr1</span>
 <code>&gt;</code> <span style="font-style: italic;">expr2</span></dt>
-
 <dd>Greater than. Evaluates to <code>-1</code> if
 the first string or number is less than the second, <code>0</code>
 otherwise. (Strings are compared alphabetically.)</dd>
@@ -257,7 +304,8 @@ Otherwise, the result is <code>0</code>.</dd>
 <dd>Logical disjunction. If <span style="font-style: italic;">expr1</span> evaluates to
 a nonzero value, that value is the result. Otherwise, the value of <span style="font-style: italic;">expr2</span> is the result.</dd>
 </dl>
-<h3><a class="mozTocH3" name="mozTocId235686"></a>Operator Precedence and Associativity</h3>
+<h3><a class="mozTocH3" name="mozTocId235686"></a>Operator
+Precedence and Associativity</h3>
 Operators are listed in precedence groups, from highest to lowest.<br>
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
 <tbody>
@@ -302,7 +350,8 @@ Operators are listed in precedence groups, from highest to lowest.<br>
 </tbody>
 </table>
 <span style="font-weight: bold;"></span>
-<h3><a class="mozTocH3" name="mozTocId251348"></a>Builtin Functions</h3>
+<h3><a class="mozTocH3" name="mozTocId251348"></a>Builtin
+Functions</h3>
 The builtin functions each take a particular number of arguments of
 particular types. Passing the wrong number of arguments or types will
 result in a runtime error. Each argument can be an expression. The
@@ -378,7 +427,8 @@ This is useful for formatting text.</dd>
 non-negative.</dd>
 <dt><code>STR(</code><span style="font-style: italic;">float</span><code>)</code></dt>
 <dd>Returns a string representation of the floating-point
-value, as it would be printed by <code>PRINT</code>, but without the trailing space.</dd>
+value, as it would be printed by <code>PRINT</code>, but
+without the trailing space.</dd>
 <dt><code>TAB(</code><span style="font-style: italic;">float</span><code>)</code></dt>
 <dd>In most BASICs this is a special command available only in <code>PRINT</code>
 statements, but in Vintage BASIC, it is just another builtin function.
@@ -413,7 +463,8 @@ rules, it must be the last statement on the line. The line on which the
 <code>DATA</code> statement occurs can be used as the
 target of a <code>RESTORE </code>statement. Example: <code>DATA
 January, 31, "Martian History Month"</code>.</dd>
-<dt><code>DEF FN</code> <span style="font-style: italic;">varname</span><code>(</code><span style="font-style: italic;">arg1</span><code>,</code> <span style="font-style: italic;">arg2</span><code>,</code>
+<dt><code>DEF FN</code> <span style="font-style: italic;">varname</span><code>(</code><span style="font-style: italic;">arg1</span><code>,</code>
+<span style="font-style: italic;">arg2</span><code>,</code>
 ...<code>)</code> <code>=</code> <span style="font-style: italic;">expr</span></dt>
 <dd>Defines a user-defined function. The arguments are
 variable names that may be used in the expression.
@@ -559,7 +610,8 @@ printed expressions. A comma is used to align text neatly in columns;
 it forces the next output column to be the start of the next print
 zone. Print zones are always 14 characters wide. A newline will be
 automatically printed at the end of the line, unless the <code>PRINT</code>
-statement ends in a semicolon or comma. Floating-point values are automatically
+statement ends in a semicolon or comma. Floating-point values are
+automatically
 padded with one trailing space, and positive values are also padded
 with a leading space, so that they take up the same amount of space as
 negative numbers. Example: <code>PRINT "TURN";TU, "YOU
@@ -598,23 +650,53 @@ a runtime error occurs. As with FOR-NEXT, association of a <code>RETURN</code>
 with a <code>GOSUB</code> is dynamic; it cannot be
 statically determined in all cases.</dd>
 <dt><code>STOP</code></dt>
-<dd><code></code>In early BASICs, the <code>END</code> statement could only appear at the end of the program. The <code>STOP</code> statement was designed to send control to that solitary <code>END</code> statement. Vintage BASIC imitates this behavior by treating the <code>STOP</code> statement as an <code>END</code>. This is unlike Microsoft version of BASIC, in which <code>STOP</code> is used to terminate the program without clearing variables, so that they can be inspected for debugging purpose, and the <code>CONT</code>
+<dd><code></code>In early BASICs, the <code>END</code>
+statement could only appear at the end of the program. The <code>STOP</code>
+statement was designed to send control to that solitary <code>END</code>
+statement. Vintage BASIC imitates this behavior by treating the <code>STOP</code>
+statement as an <code>END</code>. This is unlike Microsoft
+version of BASIC, in which <code>STOP</code> is used to
+terminate the program without clearing variables, so that they can be
+inspected for debugging purpose, and the <code>CONT</code>
 statement can resume control where it left off. That wouldn't be very
 useful in Vintage BASIC, since it does not have a read-eval-print loop.</dd>
 </dl>
-<h2><a class="mozTocH2" name="mozTocId193848"></a>Error Messages</h2>
-<dl><dt><code>!BAD GOSUB TARGET </code><span style="font-style: italic;">label1</span><code>
-in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOSUB</code>.</dd><dt><code>!BAD GOTO TARGET </code><span style="font-style: italic;">label1</span><code>
-in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>GOTO</code>.</dd><dt><code>!BAD RESTORE TARGET </code><span style="font-style: italic;">label1</span><code>
-in line </code><span style="font-style: italic;">label2</span></dt><dd>There is no line number corresponding to the target specified for the <code>RESTORE</code>.</dd><dt><code>!BREAK IN LINE </code><span style="font-style: italic;">label</span></dt>
-
+<h2><a class="mozTocH2" name="mozTocId193848"></a>Error
+Messages</h2>
+<dl>
+<dt><code>!BAD GOSUB TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt>
+<dd>There is no line number corresponding to the target
+specified for the <code>GOSUB</code>.</dd>
+<dt><code>!BAD GOTO TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt>
+<dd>There is no line number corresponding to the target
+specified for the <code>GOTO</code>.</dd>
+<dt><code>!BAD RESTORE TARGET </code><span style="font-style: italic;">label1</span><code>
+in line </code><span style="font-style: italic;">label2</span></dt>
+<dd>There is no line number corresponding to the target
+specified for the <code>RESTORE</code>.</dd>
+<dt><code>!BREAK IN LINE </code><span style="font-style: italic;">label</span></dt>
 <dd>A <code>STOP</code> statement was encountered.</dd>
-<dt><code>!DIVISION BY ZERO IN LINE </code><span style="font-style: italic;">label</span></dt><dd>An attempt was made to divide by zero.</dd><dt><code>!END OF INPUT IN LINE </code><span style="font-style: italic;">label</span></dt><dd>An attempt to <code>INPUT</code> characters failed because the end of the standard input stream was reached.</dd><dt><code>!INVALID ARGUMENT IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The argument supplied to a builtin function was outside of the allowed range.</dd><dt><code>!LINE NUMBERING ERROR IN RAW LINE&nbsp;</code><span style="font-style: italic;">nn</span></dt>
+<dt><code>!DIVISION BY ZERO IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>An attempt was made to divide by zero.</dd>
+<dt><code>!END OF INPUT IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>An attempt to <code>INPUT</code> characters
+failed because the end of the standard input stream was reached.</dd>
+<dt><code>!INVALID ARGUMENT IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The argument supplied to a builtin function was outside of
+the allowed range.</dd>
+<dt><code>!LINE NUMBERING ERROR IN RAW LINE&nbsp;</code><span style="font-style: italic;">nn</span></dt>
 <dd>The line scanner could not properly read line numbers, or
 the file did not end in a newline.</dd>
-<dt><code>!MISMATCHED ARRAY DIMENSIONS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The
+<dt><code>!MISMATCHED ARRAY DIMENSIONS IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The
 number of indices used in an array reference does not match the number
-of bounds supplied in the DIM statement (1 if it was not dimensioned).</dd><dt><code>!NEGATIVE ARRAY DIM IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A negative value was supplied as an array index, or bound in a <code>DIM</code> statement.</dd><dt><code>!NEXT WITHOUT FOR ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
+of bounds supplied in the DIM statement (1 if it was not dimensioned).</dd>
+<dt><code>!NEGATIVE ARRAY DIM IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A negative value was supplied as an array index, or bound
+in a <code>DIM</code> statement.</dd>
+<dt><code>!NEXT WITHOUT FOR ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
 <dd>A <code>NEXT</code> statement was encountered,
 but a matching <code>FOR</code> statement could not be
 found. Either a <code>FOR</code> statement was never
@@ -628,7 +710,22 @@ found. Either a <code>FOR</code> statement with that
 control variable was never encountered, or all <code>FOR</code>
 statements with that control variable have reached their termination
 conditions.</dd>
-<dt></dt><dt><code>!OUT OF ARRAY BOUNDS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A supplied array index exceeded the bound for that dimension.</dd><dt><code>!OUT OF&nbsp;DATA IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A <code>READ</code> statement in this line tried to read data, but the <code>DATA</code> pointer has already reached the end of data strings in the program. You may have too few <code>DATA</code> statements, or a bad loop termination condition that causes too many <code>READ</code>s.</dd><dt><code>!REDIM'D ARRAY IN LINE </code><span style="font-style: italic;">label</span></dt><dd>A <code>DIM</code> statement was encountered, but the array has already been dimensioned, either explicitly (through anorther <code>DIM</code> statement), or automatically (through reference to the array).</dd><dt><code>!RETURN WITHOUT GOSUB ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dt></dt>
+<dt><code>!OUT OF ARRAY BOUNDS IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A supplied array index exceeded the bound for that
+dimension.</dd>
+<dt><code>!OUT OF&nbsp;DATA IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A <code>READ</code> statement in this line
+tried to read data, but the <code>DATA</code> pointer has
+already reached the end of data strings in the program. You may have
+too few <code>DATA</code> statements, or a bad loop
+termination condition that causes too many <code>READ</code>s.</dd>
+<dt><code>!REDIM'D ARRAY IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>A <code>DIM</code> statement was encountered,
+but the array has already been dimensioned, either explicitly (through
+anorther <code>DIM</code> statement), or automatically
+(through reference to the array).</dd>
+<dt><code>!RETURN WITHOUT GOSUB ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
 <dd>A <code>RETURN</code> statement was
 encountered, but a matching <code>GOSUB</code> statement
 could not be found. Either a <code>GOSUB</code> statement
@@ -637,7 +734,19 @@ statements have already been <code>RETURN</code>ed to.</dd>
 <dt><code>!SYNTAX ERROR IN LINE </code><span style="font-style: italic;">label</span></dt>
 <dd>The program did not meet valid <a href="#Basic_Syntax">syntax
 requirements</a>. The error may contain more details as to what
-symbols were found or expected.</dd><dt><code>!TYPE MISMATCH IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The
+symbols were found or expected.</dd>
+<dt><code>!TYPE MISMATCH IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The
 type of an expression was not the type expected by the surrounding
 context, whether it be an operator, builtin function, user-defined
-function, array, or statement that requires an expression. In a <code>READ</code> statement, the type of the variable did not match the value read.</dd><dt><code>!UNDEFINED FUNCTION </code><span style="font-style: italic;">X</span><code> IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The user-defined function was called via <code>FN</code> but has never been defined by <code>DEF FN</code>.</dd><dt><code>!WRONG NUMBER OF ARGUMENTS IN LINE </code><span style="font-style: italic;">label</span></dt><dd>The wrong number of arguments were passed to the builtin or user-defined function.</dd></dl></body></html>
+function, array, or statement that requires an expression. In a <code>READ</code>
+statement, the type of the variable did not match the value read.</dd>
+<dt><code>!UNDEFINED FUNCTION </code><span style="font-style: italic;">X</span><code> IN
+LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The user-defined function was called via <code>FN</code>
+but has never been defined by <code>DEF FN</code>.</dd>
+<dt><code>!WRONG NUMBER OF ARGUMENTS IN LINE </code><span style="font-style: italic;">label</span></dt>
+<dd>The wrong number of arguments were passed to the builtin or
+user-defined function.</dd>
+</dl>
+</body></html>
