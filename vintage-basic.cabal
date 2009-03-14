@@ -1,8 +1,8 @@
 Name:          vintage-basic
-Version:       1.0
+Version:       1.0.1
 Cabal-Version: >= 1.6
 Stability:     experimental
-Synopsis:      Interpreter for 1970s-era BASIC
+Synopsis:      Interpreter for microcomputer-era BASIC
 Description:
     An interpreter for what is essentially Microsoft BASIC v2,
     what you might find on a computer in the late 70s or early
