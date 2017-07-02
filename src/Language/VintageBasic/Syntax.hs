@@ -1,9 +1,13 @@
+{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
+
 -- | Describes the abstract syntax of BASIC.
 
 module Language.VintageBasic.Syntax where
 
 import Language.VintageBasic.Builtins(Builtin)
 import Language.VintageBasic.LexCommon(Tagged(..))
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | A BASIC line number.
 type Label = Int
@@ -11,7 +15,7 @@ type Label = Int
 -- | BASIC value types. The IntType is used for storage or function arguments
 -- but is always converted to FloatType for use in expressions.
 data ValType = FloatType | IntType | StringType
-    deriving (Show,Eq)
+    deriving (Show,Eq,Generic,Hashable)
 
 class Typeable a where
     typeOf :: a -> ValType
@@ -29,7 +33,7 @@ instance Typeable Literal where
     typeOf (StringLit _) = StringType
 
 data VarName = VarName ValType String
-    deriving (Show,Eq)
+    deriving (Show,Eq,Generic,Hashable)
 
 instance Typeable VarName where
     typeOf (VarName valType _) = valType

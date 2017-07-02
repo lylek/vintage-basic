@@ -62,13 +62,13 @@ floatVarNameP = do
 intVarNameP :: TokParser VarName
 intVarNameP = do
     name <- varBaseP
-    tokenP (==PercentTok)
+    _ <- tokenP (==PercentTok)
     return (VarName IntType name)
 
 stringVarNameP :: TokParser VarName
 stringVarNameP = do
     name <- varBaseP
-    tokenP (==DollarTok)
+    _ <- tokenP (==DollarTok)
     return (VarName StringType name)
 
 -- Look for string and int vars first because of $ and % suffixes.
@@ -114,23 +114,23 @@ varXP =
 
 argsP :: TokParser [Expr]
 argsP =
-    do tokenP (==LParenTok)
+    do _ <- tokenP (==LParenTok)
        xs <- sepBy exprP (tokenP (==CommaTok))
-       tokenP (==RParenTok)
+       _ <- tokenP (==RParenTok)
        return xs
 
 fnXP :: TokParser Expr
 fnXP = do
-    tokenP (==FnTok)
+    _ <- tokenP (==FnTok)
     vn <- varNameP
     args <- argsP
     return (FnX vn args)
 
 parenXP :: TokParser Expr
 parenXP =
-    do tokenP (==LParenTok)
+    do _ <- tokenP (==LParenTok)
        x <- exprP
-       tokenP (==RParenTok)
+       _ <- tokenP (==RParenTok)
        return (ParenX x)
 
 primXP :: TokParser Expr
@@ -151,10 +151,10 @@ opTable =
 
 binary :: Token -> (Expr -> Expr -> Expr) -> Assoc -> Operator (Tagged Token) () Expr
 binary tok fun assoc =
-    Infix (do tokenP (==tok); return fun) assoc
+    Infix (do _ <- tokenP (==tok); return fun) assoc
 prefix :: Token -> (Expr -> Expr) -> Operator (Tagged Token) () Expr
 prefix tok fun =
-    Prefix (do tokenP (==tok); return fun)
+    Prefix (do _ <- tokenP (==tok); return fun)
 
 -- | Parses a BASIC expression from tokenized source.
 exprP :: TokParser Expr
@@ -164,52 +164,52 @@ exprP = buildExpressionParser opTable primXP
 
 letSP :: TokParser Statement
 letSP = do
-    optionally (tokenP (==LetTok))
+    _ <- optionally (tokenP (==LetTok))
     v <- varP
-    tokenP (==EqTok)
+    _ <- tokenP (==EqTok)
     x <- exprP
     return (LetS v x)
 
 gotoSP :: TokParser Statement
 gotoSP = do
-    try (tokenP (==GoTok) >> tokenP (==ToTok))
+    _ <- try (tokenP (==GoTok) >> tokenP (==ToTok))
     n <- lineNumP
     return (GotoS n)
 
 gosubSP :: TokParser Statement
 gosubSP = do
-    try (tokenP (==GoTok) >> tokenP (==SubTok))
+    _ <- try (tokenP (==GoTok) >> tokenP (==SubTok))
     n <- lineNumP
     return (GosubS n)
 
 returnSP :: TokParser Statement
 returnSP =
-    do tokenP (==ReturnTok)
+    do _ <- tokenP (==ReturnTok)
        return ReturnS
 
 onGotoSP :: TokParser Statement
 onGotoSP = try $ do
-    tokenP (==OnTok)
+    _ <- tokenP (==OnTok)
     x <- exprP
-    tokenP (==GoTok)
-    tokenP (==ToTok)
+    _ <- tokenP (==GoTok)
+    _ <- tokenP (==ToTok)
     ns <- sepBy1 lineNumP (tokenP (==CommaTok))
     return (OnGotoS x ns)
 
 onGosubSP :: TokParser Statement
 onGosubSP = try $ do
-    tokenP (==OnTok)
+    _ <- tokenP (==OnTok)
     x <- exprP
-    tokenP (==GoTok)
-    tokenP (==SubTok)
+    _ <- tokenP (==GoTok)
+    _ <- tokenP (==SubTok)
     ns <- sepBy1 lineNumP (tokenP (==CommaTok))
     return (OnGosubS x ns)
 
 ifSP :: TokParser Statement
 ifSP =
-    do tokenP (==IfTok)
+    do _ <- tokenP (==IfTok)
        x <- exprP
-       tokenP (==ThenTok)
+       _ <- tokenP (==ThenTok)
        target <- try ifSPGoto <|> statementListP
        return (IfS x target)
 
@@ -221,11 +221,11 @@ ifSPGoto =
 
 forSP :: TokParser Statement
 forSP = do
-    tokenP (==ForTok)
+    _ <- tokenP (==ForTok)
     vn <- varNameP
-    tokenP (==EqTok)
+    _ <- tokenP (==EqTok)
     x1 <- exprP
-    tokenP (==ToTok)
+    _ <- tokenP (==ToTok)
     x2 <- exprP
     x3 <- option (LitX (FloatLit 1)) (tokenP (==StepTok) >> exprP)
     return (ForS vn x1 x2 x3)
@@ -233,7 +233,7 @@ forSP = do
 -- | Parses a @NEXT@ and an optional variable list.
 nextSP :: TokParser Statement
 nextSP = do
-    tokenP (==NextTok)
+    _ <- tokenP (==NextTok)
     vns <- sepBy varNameP (tokenP (==CommaTok))
     if length vns > 0
         then return (NextS (Just vns))
@@ -241,7 +241,7 @@ nextSP = do
 
 printSP :: TokParser Statement
 printSP =
-    do tokenP (==PrintTok)
+    do _ <- tokenP (==PrintTok)
        xs <- many printExprP
        return (PrintS xs)
 
@@ -250,17 +250,17 @@ printExprP = emptySeparatorP <|> nextZoneP <|> exprP
 
 emptySeparatorP :: TokParser Expr
 emptySeparatorP = do
-    tokenP (==SemiTok)
+    _ <- tokenP (==SemiTok)
     return EmptySeparatorX
 
 nextZoneP :: TokParser Expr
 nextZoneP = do
-    tokenP (==CommaTok)
+    _ <- tokenP (==CommaTok)
     return NextZoneX
 
 inputSP :: TokParser Statement
 inputSP =
-    do tokenP (==InputTok)
+    do _ <- tokenP (==InputTok)
        ps <- option Nothing inputPrompt
        vs <- sepBy1 varP (tokenP (==CommaTok))
        return (InputS ps vs)
@@ -268,17 +268,17 @@ inputSP =
 inputPrompt :: TokParser (Maybe String)
 inputPrompt =
     do (StringLit p) <- stringLitP
-       tokenP (==SemiTok)
+       _ <- tokenP (==SemiTok)
        return (Just p)
 
 endSP :: TokParser Statement
 endSP =
-    do tokenP (==EndTok)
+    do _ <- tokenP (==EndTok)
        return EndS
 
 stopSP :: TokParser Statement
 stopSP =
-    do tokenP (==StopTok)
+    do _ <- tokenP (==StopTok)
        return StopS
 
 arrDeclP :: TokParser (VarName, [Expr])
@@ -290,7 +290,7 @@ arrDeclP = do
 
 dimSP :: TokParser Statement
 dimSP = do
-   tokenP (==DimTok)
+   _ <- tokenP (==DimTok)
    arrDecls <- sepBy1 arrDeclP (tokenP (==CommaTok))
    return (DimS arrDecls)
 
@@ -301,13 +301,13 @@ randomizeSP = do
 
 readSP :: TokParser Statement
 readSP = do
-    tokenP (==ReadTok)
+    _ <- tokenP (==ReadTok)
     vs <- sepBy1 varP (tokenP (==CommaTok))
     return (ReadS vs)
 
 restoreSP :: TokParser Statement
 restoreSP = do
-    tokenP (==RestoreTok)
+    _ <- tokenP (==RestoreTok)
     maybeLineNum <- optionally lineNumP
     return (RestoreS maybeLineNum)
 
@@ -318,13 +318,13 @@ dataSP = do
 
 defFnSP :: TokParser Statement
 defFnSP = do
-    tokenP (==DefTok)
-    tokenP (==FnTok)
+    _ <- tokenP (==DefTok)
+    _ <- tokenP (==FnTok)
     name <- varNameP
-    tokenP (==LParenTok)
+    _ <- tokenP (==LParenTok)
     params <- sepBy1 varNameP (tokenP (==CommaTok))
-    tokenP (==RParenTok)
-    tokenP (==EqTok)
+    _ <- tokenP (==RParenTok)
+    _ <- tokenP (==EqTok)
     expr <- exprP
     return (DefFnS name params expr)
 
@@ -345,7 +345,7 @@ statementP = do
 -- | Parses a list of statements from a tokenized BASIC source line.
 statementListP :: TokParser [Tagged Statement]
 statementListP = do
-    many (tokenP (==ColonTok))
+    _ <- many (tokenP (==ColonTok))
     sl <- sepEndBy1 statementP (many1 (tokenP (==ColonTok)))
     eol <?> ": OR END OF LINE"
     return sl

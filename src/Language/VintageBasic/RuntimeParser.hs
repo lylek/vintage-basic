@@ -17,7 +17,7 @@ nonCommaP = satisfy (/=',')
 
 stringP :: Parser String
 stringP =
-    do char '"'
+    do _ <- char '"'
        s <- manyTill anyChar (char '"')
        spaces
        return s

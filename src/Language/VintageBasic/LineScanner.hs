@@ -10,12 +10,12 @@ type RawLine = Tagged String
 
 eol :: Parser Char
 eol = do
-    optionally (char '\r')
+    _ <- optionally (char '\r')
     newline
 
 blankLineP :: Parser ()
 blankLineP = do
-    eol <?> ""
+    _ <- eol <?> ""
     whiteSpace
 
 rawLineP :: Parser RawLine
@@ -25,14 +25,14 @@ rawLineP = do
     pos <- getPosition
     s <- manyTill (anyChar <?> "CHARACTER") (eol <?> "END OF LINE")
     whiteSpace
-    many blankLineP
+    _ <- many blankLineP
     return (Tagged (setSourceLine pos n) s)
 
 rawLinesP :: Parser [RawLine]
 rawLinesP = do
     whiteSpace
-    many blankLineP
+    _ <- many blankLineP
     ls <- many rawLineP
-    many blankLineP
+    _ <- many blankLineP
     eof <?> "END OF FILE"
     return ls

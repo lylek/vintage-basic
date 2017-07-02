@@ -4,3 +4,5 @@ cabal-dev
 *.hi
 *.chi
 *.chs.h
+.stack-work
+

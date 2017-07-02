@@ -10,18 +10,35 @@ module Control.Monad.CPST where
 
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Trans
 
 -- | Definition of the CPST (continuation-passing style) monad.
-newtype Monad m => CPST o m i =
+newtype CPST o m i =
+      -- o is the type of the ultimate output
+      -- m is the nested monad
+      -- i is the type of the intermediate result of this step
       CPST { unCPST :: (i -> m o) -> m o }
 
-instance (Monad m) => Functor (CPST o m) where
-    fmap f (CPST m') = CPST (\k -> m' (k . f))
+instance Functor (CPST o m) where
+    -- (a -> b) -> CPST o m a -> CPST o m b
+    -- mx :: (a -> m o) -> m o
+    -- k :: b -> m o
+    -- f :: a -> b
+    -- k . f :: a -> m o
+    fmap f (CPST mx) = CPST (\k -> mx (k . f))
 
-instance Monad m => Monad (CPST o m) where
+instance Applicative (CPST o m) where
+    pure x = CPST (\k -> k x)
+    -- CPST o m (a -> b) -> CPST o m a -> CPST o m b
+    -- mf :: ((a -> b) -> m o) -> m o
+    -- mx :: (a -> m o) -> m o
+    -- k :: b -> m o
+    -- f :: a -> b
+    -- x :: a
+    (CPST mf) <*> (CPST mx) = CPST (\k -> mf (\f -> mx (\x -> k (f x))))
+
+instance Monad (CPST o m) where
       return x = CPST (\k -> k x)
-      (CPST m') >>= f = CPST (\k -> m' (\x -> unCPST (f x) k))
+      (CPST mx) >>= f = CPST (\k -> mx (\x -> unCPST (f x) k))
 
 -- The basic monad utilities: runCPST, lift, liftIO
 

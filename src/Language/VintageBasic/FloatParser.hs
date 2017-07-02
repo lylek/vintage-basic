@@ -32,7 +32,7 @@ class FloatParser tok st where
     float2P :: GenParser tok st String
     float2P = do
         i <- many digitP
-        dotP
+        _ <- dotP
         f <- many digitP
         return ("0"++i++"."++f++"0")
 
@@ -43,7 +43,7 @@ class FloatParser tok st where
 
     expP :: GenParser tok st String
     expP = do
-        charEP
+        _ <- charEP
         esgn <- option "" sgnP
         i <- many1 digitP
         return ("E"++esgn++i)

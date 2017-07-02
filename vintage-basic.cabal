@@ -19,13 +19,15 @@ Author:             Lyle Kopnicky
 Maintainer:         lyle@vintage-basic.net
 Homepage:           http://www.vintage-basic.net
 Build-Type:         Simple
-Tested-With:        GHC==6.10.1
+Tested-With:        GHC==8.0.2
 Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt doc/*.html
 
 Executable vintbas
   Main-is:        Basic.hs
   Build-Depends:  base >=3,
                   array >=0.1,
+                  hashable >=1.2,
+                  hashtables >=1.2,
                   mtl >=1.1,
                   parsec >=2.1,
                   random >=1,
@@ -38,3 +40,20 @@ Executable vintbas
                   filepath >=1.1
   HS-Source-Dirs: src
   GHC-Options:    -Wall
+  Other-Modules: Control.Monad.CPST,
+                 Control.Monad.CPST.DurableTraps,
+                 Control.Monad.CPST.ExceptionHandlers,
+                 IO.IOStream,
+                 Language.VintageBasic.BasicMonad,
+                 Language.VintageBasic.Builtins,
+                 Language.VintageBasic.Executer,
+                 Language.VintageBasic.FloatParser,
+                 Language.VintageBasic.Interpreter,
+                 Language.VintageBasic.LexCommon,
+                 Language.VintageBasic.LineScanner,
+                 Language.VintageBasic.Parser,
+                 Language.VintageBasic.Printer,
+                 Language.VintageBasic.Result,
+                 Language.VintageBasic.RuntimeParser,
+                 Language.VintageBasic.Syntax,
+                 Language.VintageBasic.Tokenizer

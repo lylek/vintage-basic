@@ -9,15 +9,13 @@ import Prelude hiding (lookup)
 import Control.Monad.CPST
 import Control.Monad.CPST.DurableTraps
 import Control.Monad.Reader
-import Control.Monad.State
-import Control.Monad.Trans
-import Data.HashTable
+import Control.Monad.State (StateT, runStateT, get, put, modify)
+import Data.HashTable.IO
 import Data.IORef
 import Data.Array.IO
 import Data.Maybe
 import Data.Time
 import IO.IOStream
-import Language.VintageBasic.Printer(printVarName)
 import Language.VintageBasic.Result
 import Language.VintageBasic.Syntax
 import System.Random
@@ -39,11 +37,11 @@ defVal StringType = StringVal ""
 
 -- | The store of BASIC variables.
 data BasicStore = BasicStore {
-    scalarTable :: HashTable VarName (IORef Val),
+    scalarTable :: BasicHashTable VarName (IORef Val),
       -- ^ scalar variable assignments
-    arrayTable :: HashTable VarName ([Int], IOArray Int Val),
+    arrayTable :: BasicHashTable VarName ([Int], IOArray Int Val),
       -- ^ array variable values (@[Int]@ lists the bound of each dimension)
-    fnTable :: HashTable VarName (IORef ([Val] -> Code Val))
+    fnTable :: BasicHashTable VarName (IORef ([Val] -> Code Val))
       -- ^ user-defined function (@DEF FN@) definitions
 }
 
@@ -90,12 +88,12 @@ runProgram
     -> IO ()
 runProgram inputHandle outputHandle prog = do
     vFlush outputHandle
-    st <- new (==) (hashString . printVarName)
-    at <- new (==) (hashString . printVarName)
-    ft <- new (==) (hashString . printVarName)
+    st <- new
+    at <- new
+    ft <- new
     let store = BasicStore st at ft
     let state = (BasicState inputHandle outputHandle 0 0 0 (mkStdGen 0) [])
-    runStateT (runReaderT (runCPST (catchC errorDumper prog)) store) state
+    _ <- runStateT (runReaderT (runCPST (catchC errorDumper prog)) store) state
     return ()
 
 -- | Raises a runtime error if the assertion is False.

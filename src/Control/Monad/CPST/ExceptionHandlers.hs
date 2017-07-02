@@ -3,7 +3,6 @@
 
 module Control.Monad.CPST.ExceptionHandlers where
 
-import Control.Monad
 import Control.Monad.CPST
 
 -- The inward (catching) exception handlers --

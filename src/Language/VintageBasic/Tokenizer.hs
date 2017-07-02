@@ -40,7 +40,7 @@ keyword s = try (string s) <?> ("keyword " ++ s)
 stringTokP :: Parser Token
 -- no special escape chars allowed
 stringTokP =
-    do char '"'
+    do _ <- char '"'
        s <- manyTill anyChar (char '"')
        whiteSpace
        return (StringTok s)
@@ -50,7 +50,7 @@ isStringTok (StringTok _) = True
 isStringTok _ = False
 
 remTokP :: Parser Token
-remTokP = do keyword "REM"
+remTokP = do _ <- keyword "REM"
              s <- many anyChar
              return (RemTok s)
 
@@ -60,7 +60,7 @@ isRemTok _ = False
 
 dataTokP :: Parser Token
 dataTokP =
-    do keyword "DATA"
+    do _ <- keyword "DATA"
        s <- many anyChar
        return (DataTok s)
 
@@ -132,7 +132,7 @@ tokToStrAssoc = [(t,s) | (s,t) <- strToTokAssoc]
 
 anyTokP :: Parser Token
 anyTokP = choice ([spaceTokP, stringTokP, remTokP, dataTokP]
-                  ++ [do keyword s; whiteSpace; return t | (s,t) <- strToTokAssoc]
+                  ++ [do _ <- keyword s; whiteSpace; return t | (s,t) <- strToTokAssoc]
                   ++ [charTokP]) <?> "LEGAL BASIC CHARACTER"
 
 isBuiltinTok :: Token -> Bool
