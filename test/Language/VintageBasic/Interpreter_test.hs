@@ -270,7 +270,7 @@ test_right = testExpressions [
 
 test_rnd = testProgramOutput
     "1 ?RND(-1):?RND(1):?RND(1):?RND(0):?RND(10):?RND(-2.5)\n"
-    " .35925463 \n .3306234 \n .13648525 \n .13648525 \n .53864 \n .10321328 \n"
+    " .72774446 \n .6806801 \n .2628854 \n .2628854 \n .8841321 \n .2695619 \n"
 
 test_rnd_errors = testExpressions [
     ("RND()", "!WRONG NUMBER OF ARGUMENTS IN LINE 1"),

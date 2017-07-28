@@ -57,3 +57,8 @@ Executable vintbas
                  Language.VintageBasic.RuntimeParser,
                  Language.VintageBasic.Syntax,
                  Language.VintageBasic.Tokenizer
+
+Test-Suite test-vintbas
+    type:       exitcode-stdio-1.0
+    main-is:    run_tests.hs
+    build-depends: base

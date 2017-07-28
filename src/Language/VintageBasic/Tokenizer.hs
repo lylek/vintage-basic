@@ -8,7 +8,7 @@ module Language.VintageBasic.Tokenizer
     (Token(..),TokenizedLine,isDataTok,isRemTok,charTokTest,taggedCharToksToString,isStringTok,
      isBuiltinTok,taggedTokensP,tokenP,printToken) where
 
-import Data.Char(toUpper)
+import Data.Char(toLower,toUpper)
 import Language.VintageBasic.Builtins(Builtin,builtinToStrAssoc)
 import Language.VintageBasic.LexCommon
 import Text.ParserCombinators.Parsec
@@ -34,8 +34,11 @@ data Token = StringTok { getStringTokString :: String } | RemTok { getRemTokStri
            | SpaceTok | DotTok | CharTok { getCharTokChar :: Char }
              deriving (Eq,Show)
 
+caseInsensitiveChar :: Char -> Parser Char
+caseInsensitiveChar c = char (toLower c) <|> char (toUpper c)
+
 keyword :: String -> Parser String
-keyword s = try (string s) <?> ("keyword " ++ s)
+keyword s = try (mapM caseInsensitiveChar s) <?> ("keyword " ++ s)
 
 stringTokP :: Parser Token
 -- no special escape chars allowed

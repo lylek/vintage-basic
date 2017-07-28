@@ -3,8 +3,8 @@
 import Data.Array ((!))
 import Data.List (intersperse)
 import Data.Maybe (catMaybes)
-import System.Cmd (system)
-import System.Directory (doesDirectoryExist,getCurrentDirectory,getDirectoryContents)
+import System.Process (system)
+import System.Directory (doesDirectoryExist,getCurrentDirectory,getDirectoryContents,removeFile)
 import System.FilePath ((</>))
 import System.Environment (getArgs)
 import Text.Regex.Base
@@ -32,6 +32,7 @@ main = do
    let testCode = genTestDriver modulesWithTests
    writeFile "test_driver.hs" testCode
    system ("runhaskell -itest -isrc test_driver.hs")
+   removeFile "test_driver.hs"
 
 findFilesInSubdirs :: FilePath -> IO [String]
 findFilesInSubdirs dir = do

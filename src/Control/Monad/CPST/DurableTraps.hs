@@ -4,7 +4,6 @@
 
 module Control.Monad.CPST.DurableTraps where
 
-import Control.Monad
 import Control.Monad.CPST
 import Control.Monad.CPST.ExceptionHandlers(capture,install,raise)
 

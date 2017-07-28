@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Language.VintageBasic.Asserts where
 
 import Data.IORef

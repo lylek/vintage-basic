@@ -303,7 +303,7 @@ interpS _ (LetS var x) = do
     setVar var val
 
 interpS _ (PrintS xs) = do
-    mapM (\x -> eval x >>= printVal) xs
+    _ <- mapM (\x -> eval x >>= printVal) xs
     if null xs || not (isPrintSeparator (last xs))
         then printString "\n"
         else return ()
@@ -361,7 +361,7 @@ interpS _ (NextS (Just vars)) = mapM_ interpNextVar vars
 interpS jumpTable (GosubS lab) =
     do let maybeCode = programLookup jumpTable lab
        assert (isJust maybeCode) (BadGosubTargetError lab)
-       catchC gosubHandler (fromJust maybeCode)
+       _ <- catchC gosubHandler (fromJust maybeCode)
        return ()
 interpS _ ReturnS = raiseRuntimeException Return
 
@@ -494,7 +494,7 @@ interpDim (vn, xs) = do
     is <- checkArrInds inds
     -- add 1, so that range is from 0 to user-specified bound
     let bounds = map (1+) is
-    dimArray vn bounds
+    _ <- dimArray vn bounds
     return ()
 
 checkArrInds :: [Val] -> Basic (BasicExcep Result ()) [Int]

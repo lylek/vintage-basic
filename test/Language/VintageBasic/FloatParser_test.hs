@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Language.VintageBasic.FloatParser_test where
 
 import Test.HUnit
