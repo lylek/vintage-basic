@@ -1,6 +1,6 @@
 Name:          vintage-basic
-Version:       1.0.1
-Cabal-Version: >= 1.6
+Version:       1.0.3
+Cabal-Version: >= 1.10
 Stability:     experimental
 Synopsis:      Interpreter for microcomputer-era BASIC
 Description:
@@ -24,7 +24,7 @@ Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas 
 
 Executable vintbas
   Main-is:        Basic.hs
-  Build-Depends:  base >=3,
+  Build-Depends:  base >=4.9 && <5,
                   array >=0.1,
                   hashable >=1.2,
                   hashtables >=1.2,
@@ -40,6 +40,7 @@ Executable vintbas
                   filepath >=1.1
   HS-Source-Dirs: src
   GHC-Options:    -Wall
+  Default-Language: Haskell2010
   Other-Modules: Control.Monad.CPST,
                  Control.Monad.CPST.DurableTraps,
                  Control.Monad.CPST.ExceptionHandlers,
@@ -62,3 +63,4 @@ Test-Suite test-vintbas
     type:       exitcode-stdio-1.0
     main-is:    run_tests.hs
     build-depends: base
+    default-language: Haskell2010

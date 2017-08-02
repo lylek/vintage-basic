@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Vintage BASIC Developer Notes</title></head>
-<body><h1>Vintage BASIC Developer Notes 1.0.1</h1><p>© 2009, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>I began Vintage BASIC as a class project at the <a href="http://www.ogi.edu">Oregon Graduate
+<body><h1>Vintage BASIC Developer Notes 1.0.3</h1><p>© 2009&mdash;2017, <a href="mailto://lyle@vintage-basic.net">Lyle Kopnicky</a></p><p>I began Vintage BASIC as a class project at the <a href="http://www.ogi.edu">Oregon Graduate
 Institute</a>. My aim was to demonstrate advanced knowledge of monads in
 <a href="http://www.haskell.org">Haskell</a>.
 It occurred to me that BASIC's dynamic control structures would be
@@ -37,4 +37,4 @@ the interpreter. The interpreter tests are at more or less integration
 tests rather than unit tests. They test the interpretation of the BASIC
 language straight from the textual source. However they are still unit
 tests in the sense that they are focused on exercising the behavior of
-the interpreter proper.</p><p>The tests are arranged in a hierarchical directory structure parallel to the implementation: in the <code>test</code> directory rather than <code>src</code>. They are executed by a harness called <code>run_tests.hs</code> in the root directory. This custom-written script finds all of the modules named ending in <code>_test</code>, and the functions within those modules starting with <code>test_</code>. It builds a driver program that calls all the tests, and executes it.</p><p>The tests can be run by calling <code>runhaskell run_tests.hs</code>, or preferably via <code>runhaskell Setup.hs test</code>.</p></body></html>
+the interpreter proper.</p><p>The tests are arranged in a hierarchical directory structure parallel to the implementation: in the <code>test</code> directory rather than <code>src</code>. They are executed by a harness called <code>run_tests.hs</code> in the root directory. This custom-written script finds all of the modules named ending in <code>_test</code>, and the functions within those modules starting with <code>test_</code>. It builds a driver program that calls all the tests, and executes it.</p><p>The tests can be run by calling <code>cabal test</code>, or if you have <code>stack</code> installed, then via <code>stack test</code>.</p></body></html>

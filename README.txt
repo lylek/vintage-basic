@@ -1,15 +1,27 @@
 To compile:
 
-runhaskell Setup.hs configure
-runhaskell Setup.hs build
+cabal configure
+cabal build
+
+...or with stack:
+
+stack build
 
 To run unit tests:
 
-runhaskell Setup.hs test
+cabal test
+
+..or with stack:
+
+stack test
 
 To install:
 
-runhaskell Setup.hs install
+cabal install
+
+...or with stack:
+
+stack install
 
 You can then run the resulting program as
 
