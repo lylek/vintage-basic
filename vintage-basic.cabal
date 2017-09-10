@@ -62,5 +62,11 @@ Executable vintbas
 Test-Suite test-vintbas
     type:       exitcode-stdio-1.0
     main-is:    run_tests.hs
-    build-depends: base
+    build-depends: base,
+                   array >=0.1,
+                   process >=1,
+                   directory >=1,
+                   filepath >=1.1,
+                   regex-base >=0.72,
+                   regex-posix >=0.72
     default-language: Haskell2010
