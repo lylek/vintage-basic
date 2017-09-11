@@ -76,14 +76,14 @@ trap :: Monad m
 trap f = callCC (\hk -> install (h hk))
     where h hk (Excep xv hc xk) =
               let hc' exc' = capture (h hk) (hc exc')
-                  xk' v  = capture (h hk) (xk v) >>= raise
+                  xk' v  = capture (h hk) (xk v)
                   passOn endure =
                       if endure
                          then raise (Excep xv hc' xk')
                          else raise (Excep xv hc  xk')
                   resume endure =
                       if endure
-                         then xk' ()           -- might want other than (),
+                         then xk' () >>= raise -- might want other than (),
                          else xk  () >>= raise -- say, for implementing state
                   continue endure =
                       if endure
@@ -102,14 +102,14 @@ catchC :: Monad m
 catchC f m = callCC (\hk -> capture (h hk) m)
     where h hk (Excep xv hc xk) =
               let hc' exc' = capture (h hk) (hc exc')
-                  xk' v  = capture (h hk) (xk v) >>= hk >>= raise
+                  xk' v  = capture (h hk) (xk v) >>= hk
                   passOn endure =
                       if endure
                          then raise (Excep xv hc' xk')
                          else raise (Excep xv hc  xk')
                   resume endure =
                       if endure
-                         then xk' ()           -- might want other than (),
+                         then xk' () >>= raise -- might want other than (),
                          else xk  () >>= raise -- say, for implementing state
                   continue endure =
                       if endure
