@@ -37,7 +37,7 @@ raiseCC x = callCC (\k -> raise (Excep x return k))
 
 type ExceptionResumer o m = forall a. Bool -> CPST (Excep o m ()) m a
 
-type ExceptionHandler o m = Monad m => o -> ExceptionResumer o m -> ExceptionResumer o m
+type ExceptionHandler o m = o -> ExceptionResumer o m -> ExceptionResumer o m
     -> ExceptionResumer o m -> CPST (Excep o m ()) m (Excep o m ())
 
 -- | A flexible exception handling mechanism.  It takes a function 'f' as a
