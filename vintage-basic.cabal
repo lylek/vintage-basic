@@ -19,7 +19,7 @@ Author:             Lyle Kopnicky
 Maintainer:         lyle@vintage-basic.net
 Homepage:           http://www.vintage-basic.net
 Build-Type:         Simple
-Tested-With:        GHC==8.0.2
+Tested-With:        GHC==8.2.2
 Extra-Source-Files: test/Language/VintageBasic/*.hs run_tests.hs examples/*.bas README.txt doc/*.html
 
 Executable vintbas
