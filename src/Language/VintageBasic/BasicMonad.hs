@@ -205,7 +205,9 @@ setFn vn fn = do
 
 -- | Set the current line number in the BASIC state.
 setLineNumber :: Int -> Basic o ()
-setLineNumber lineNum = modify (\state -> state { lineNumber = lineNum })
+setLineNumber lineNum = do
+    state <- get
+    seq state $ put (state { lineNumber = lineNum })
 
 -- | The width of print zones, used for commas in a @PRINT@ statement.
 zoneWidth :: Int

@@ -79,26 +79,31 @@ isReturn (LabeledRuntimeException _ Return) = True
 isReturn _ = False
 
 liftFVOp1 :: (Float -> Float) -> Val -> Code Val
-liftFVOp1 f (FloatVal v1) = return $ FloatVal $ f v1
+liftFVOp1 f (FloatVal v1) =
+    let v = f v1 in seq v $ return $ FloatVal v
 liftFVOp1 _ _             = typeMismatch
 
 liftFVBuiltin1 :: (Float -> Float) -> [Val] -> Code Val
-liftFVBuiltin1 f [FloatVal v1] = return $ FloatVal $ f v1
+liftFVBuiltin1 f [FloatVal v1] =
+    let v = f v1 in seq v $ return $ FloatVal v
 liftFVBuiltin1 _ [_] = typeMismatch
 liftFVBuiltin1 _ _ = wrongNumArgs
 
 liftFVOp2 :: (Float -> Float -> Float) -> Val -> Val -> Code Val
-liftFVOp2 f (FloatVal v1) (FloatVal v2) = return $ FloatVal $ f v1 v2
+liftFVOp2 f (FloatVal v1) (FloatVal v2) =
+    let v = f v1 v2 in seq v $ return $ FloatVal v
 liftFVOp2 _ _             _             = typeMismatch
 
 liftSVOp2 :: (String -> String -> String) -> Val -> Val -> Code Val
-liftSVOp2 f (StringVal v1) (StringVal v2) = return $ StringVal $ f v1 v2
+liftSVOp2 f (StringVal v1) (StringVal v2) =
+    let v = f v1 v2 in seq v $ return $ StringVal v
 liftSVOp2 _ _              _              = typeMismatch
 
 liftFSCmpOp2 :: (forall a. Ord a => a -> a -> Bool) -> Val -> Val -> Code Val
 liftFSCmpOp2 f v1 v2 = do
     assert (typeOf v1 == typeOf v2) TypeMismatchError
-    return $ boolToVal $ f v1 v2
+    let v = f v1 v2
+    seq v $ return $ boolToVal v
 
 valError :: RuntimeError -> Code Val
 -- The return (FloatVal 0) will never be executed, but is needed to make the types work out.
@@ -155,7 +160,7 @@ evalBinOp op =
                 (FloatVal fv1, FloatVal fv2) ->
                     if fv2==0
                         then divisionByZero
-                        else return $ FloatVal $ fv1/fv2
+                        else let v = fv1/fv2 in seq v $ return $ FloatVal v
                 (_,_) -> typeMismatch
         PowOp -> liftFVOp2 (**)
         EqOp -> liftFSCmpOp2 (==)
