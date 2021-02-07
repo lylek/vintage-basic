@@ -518,7 +518,11 @@ test_input = TestList [
     "error if we reach eof without enough data (no newline)" ~: testProgramOutputWithInput
         "1 INPUTA:?:?A\n"
         ""
-        "? !END OF INPUT IN LINE 1\n"
+        "? !END OF INPUT IN LINE 1\n",
+    "input resets tab location" ~: testProgramOutputWithInput
+        "1 INPUT\"HELLO\";A$:?TAB(3);\"X\"\n"
+        "GOODBYE\n"
+        "HELLO?    X\n"
   ]
 
 test_read_data = TestList [

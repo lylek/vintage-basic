@@ -242,7 +242,9 @@ getString = do
     liftIO $ vFlush (outputStream state)
     eof <- liftIO $ vIsEOF (inputStream state)
     assert (not eof) EndOfInputError
-    liftIO $ vGetLine (inputStream state)
+    str <- liftIO $ vGetLine (inputStream state)
+    put state { outputColumn = 0 }
+    return str
 
 -- | The number of seconds that have elapsed since midnight (local time).
 secondsSinceMidnight :: Code Int
