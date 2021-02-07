@@ -351,8 +351,11 @@ interpS _ (ForS control x1 x2 x3) = do
     trap $ \ x passOn resume continue ->
         if isNext x || isNextVar control x
             then do
-                (FloatVal index) <- getScalarVar control
-                let index' = index+step
+                indexVal <- getScalarVar control
+                let index = case indexVal of
+                        FloatVal i -> i
+                        _ -> error "expected float val for FOR index"
+                    index' = index+step
                 setScalarVar control (FloatVal index')
                 if (step>=0 && index'<=lim)
                     || (step<0 && index'>=lim)
